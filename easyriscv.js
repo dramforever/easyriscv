@@ -8,7 +8,7 @@ export class RiscvMemory {
 
     fetch(address) {
         const mem_top = this.mem_base + this.memory.byteLength;
-        if (this.mem_base <= address && address < mem_top) {
+        if (this.mem_base <= address && address <= mem_top - 4) {
             const offset = address - this.mem_base;
             return this.memory_view.getUint32(offset, true);
         } else {
@@ -19,7 +19,7 @@ export class RiscvMemory {
     read(address, width) {
         console.log('read', address.toString(16).padStart(8, '0'), width);
         const mem_top = this.mem_base + this.memory.byteLength;
-        if (this.mem_base <= address && address < mem_top) {
+        if (this.mem_base <= address && address <= mem_top - width) {
             const offset = address - this.mem_base;
             if (width === 1) {
                 return this.memory_view.getUint8(offset);
@@ -44,7 +44,7 @@ export class RiscvMemory {
     write(address, width, data) {
         console.log('write', address.toString(16).padStart(8, '0'), data.toString(16).padStart(2 * width, '0'));
         const mem_top = this.mem_base + this.memory.byteLength;
-        if (this.mem_base <= address && address < mem_top) {
+        if (this.mem_base <= address && address <= mem_top - width) {
             const offset = address - this.mem_base;
             if (width === 1) {
                 this.memory_view.setUint8(offset, data);
