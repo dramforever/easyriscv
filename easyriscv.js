@@ -180,7 +180,7 @@ export class RiscvState {
                 return this.exception(CAUSE_CODE.illegal_instruction, insn);
             } else {
                 // lb, lh, lw, lbu, lhu
-                const addr = ((insn >>> 20) + this.regs[(insn >>> 15) & 0b11111]) >>> 0;
+                const addr = ((insn >> 20) + this.regs[(insn >>> 15) & 0b11111]) >>> 0;
                 const width = 1 << ((insn >>> 12) & 0b011);
                 const res = this.memory.read(addr, width);
                 if (res === null) {
@@ -244,8 +244,8 @@ export class RiscvState {
                         ? (op1 - op2)
                         : (op1 + op2))
                 : (funct3 === 0b001) ? (op1 << (op2 & 0b11111))
-                : (funct3 === 0b010) ? (((op1 | 0) < (op2 | 0)) ? 0 : 1)
-                : (funct3 === 0b011) ? (((op1 >>> 0) < (op2 >>> 0)) ? 0 : 1)
+                : (funct3 === 0b010) ? (((op1 | 0) < (op2 | 0)) ? 1 : 0)
+                : (funct3 === 0b011) ? (((op1 >>> 0) < (op2 >>> 0)) ? 1 : 0)
                 : (funct3 === 0b100) ? (op1 ^ op2)
                 : (funct3 === 0b101) ?
                     (((funct7 & 0b0100000) != 0)
