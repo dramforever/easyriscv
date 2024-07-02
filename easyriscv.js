@@ -258,7 +258,7 @@ export class RiscvState {
             this.pc = (this.pc + 4) >>> 0;
             return true;
         } else if ((insn & 0b1111111) == 0b0001111) {
-            if (((insn >>> 12) & 0b011) === 0b000) {
+            if (((insn >>> 12) & 0b111) === 0b000) {
                 // fence
                 // do nothing
                 this.pc = (this.pc + 4) >>> 0;
