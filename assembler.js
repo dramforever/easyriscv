@@ -784,8 +784,6 @@ export function assemble_riscv(text, origin) {
         }
     }
 
-    console.log(loc, loc_counter)
-
     const buf = new ArrayBuffer(pc - origin);
     const view = new DataView(buf);
 
