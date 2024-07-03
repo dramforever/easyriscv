@@ -123,7 +123,12 @@ function convertEmulator(el) {
             renderRegs();
             updateUI();
         } else {
-            writeOutput(JSON.stringify(res.errors));
+            const parts = [];
+            const lines = edit.value.split('\n');
+            for (const { lineno, message } of res.errors) {
+                parts.push(`${message}\n${lineno.toString().padStart(4, ' ')}| ${lines[lineno - 1]}`)
+            }
+            writeOutput('\n' + parts.join('\n\n') + '\n[ Errors while assembling ]\n');
         }
     }
 

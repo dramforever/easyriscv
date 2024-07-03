@@ -83,6 +83,10 @@ function parse_operand(tokens, p) {
             }
             p.i++;
             const inner = parse_value(tokens, p);
+            if (inner.type === 'error') {
+                return inner;
+            }
+
             if (p.i >= tokens.length || tokens[p.i] !== ')') {
                 return invalid;
             }
@@ -835,7 +839,7 @@ export function assemble_riscv(text, origin) {
                     } else {
                         return {
                             type: 'error',
-                            message: 'No %pcrel_hi found'
+                            message: 'No corresponding %pcrel_hi found'
                         };
                     }
                 }
