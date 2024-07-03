@@ -64,18 +64,18 @@
 
 <body>
     <div class="emulator-disabled"># welcome to easyriscv emulator
-L1:
-    auipc s1, %pcrel_hi(msg)
-    addi s1, s1, %pcrel_lo(L1)
+start:
 
-L2:
-    lbu a0, (s1)
-    beq a0, zero, L3
+1:  auipc s1, %pcrel_hi(msg)
+    addi s1, s1, %pcrel_lo(1b)
+
+1:  lbu a0, (s1)
+    beq a0, zero, 2f
     jal putchar
     addi s1, s1, 1
-    j L2
+    j 1b
 
-L3: ebreak
+2:  ebreak
 
 putchar:
     lui a1, 0x10000
