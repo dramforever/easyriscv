@@ -670,7 +670,7 @@ function assemble_rm_stype(base) {
         const insn = base
             | (rs1 << 15)
             | (rs2 << 20)
-            | ((value >> 5) << 20)
+            | ((value >> 5) << 25)
             | ((value & 0b11111) << 7);
         view.setUint32(offset, insn, /* littleEndian */ true);
         return { type: 'ok' };
@@ -802,12 +802,12 @@ const WORDS = (() => {
     words.set('lb',     process_instruction('rm', assemble_rm_itype(0x00000003)));
     words.set('lh',     process_instruction('rm', assemble_rm_itype(0x00001003)));
     words.set('lw',     process_instruction('rm', assemble_rm_itype(0x00002003)));
-    words.set('lbu',    process_instruction('rm', assemble_rm_itype(0x00003003)));
-    words.set('lhu',    process_instruction('rm', assemble_rm_itype(0x00004003)));
+    words.set('lbu',    process_instruction('rm', assemble_rm_itype(0x00004003)));
+    words.set('lhu',    process_instruction('rm', assemble_rm_itype(0x00005003)));
 
-    words.set('sb',     process_instruction('rm', assemble_rm_stype(0x00001003)));
-    words.set('sh',     process_instruction('rm', assemble_rm_stype(0x00002003)));
-    words.set('sw',     process_instruction('rm', assemble_rm_stype(0x00004003)));
+    words.set('sb',     process_instruction('rm', assemble_rm_stype(0x00000023)));
+    words.set('sh',     process_instruction('rm', assemble_rm_stype(0x00001023)));
+    words.set('sw',     process_instruction('rm', assemble_rm_stype(0x00002023)));
 
     words.set('beq',    process_instruction('rro', assemble_branch(0x00000063)));
     words.set('bne',    process_instruction('rro', assemble_branch(0x00001063)));
@@ -1117,7 +1117,7 @@ export function assemble_riscv(text, origin) {
                 } else if (expr.special === '%pcrel_hi') {
                     return {
                         type: 'ok',
-                        value: (value - pc) >>> 12 + (((value - pc) & 0x800) != 0)
+                        value: ((value - pc) >>> 12) + (((value - pc) & 0x800) != 0)
                     };
                 } else if (expr.special === '%pcrel_lo') {
                     const rel = get_pcrel_at(value);
