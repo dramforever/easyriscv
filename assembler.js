@@ -40,7 +40,7 @@ function parse_value(tokens, p) {
             type: 'error',
             message: 'Expecting value, got end of line'
         };
-    } else if (/^-?[0-9]\w*$/.test(tokens[p.i])) {
+    } else if (/^-?(?:[0-9]+|0\w+)$/.test(tokens[p.i])) {
         const res = Number(tokens[p.i]);
         if (Number.isSafeInteger(res)) {
             p.i++;
@@ -54,6 +54,20 @@ function parse_value(tokens, p) {
                 message: `Invalid number ${tokens[p.i]}`
             };
         }
+    } else if (/^\d+[fb]$/.test(tokens[p.i])) {
+        const base = tokens[p.i].slice(0, -1);
+        if (! p.loc_counter.has(base)) {
+            p.loc_counter.set(base, 0);
+        }
+        const count = p.loc_counter.get(base);
+        const dir = tokens[p.i].slice(-1);
+        p.i ++;
+        return {
+            type: 'loc',
+            label: tokens[p.i],
+            base,
+            suffix: count + (dir == 'f')
+        };
     } else if (!REGEX_OPERATOR.test(tokens[p.i])) {
         const label = tokens[p.i];
         p.i++;
@@ -709,6 +723,8 @@ export function assemble_riscv(text, origin) {
     let pc = origin;
     const label = new Map();
     const chunks = new Map();
+    const loc = new Map();
+    const loc_counter = new Map();
     const errors = [];
 
     let lineno = 0;
@@ -722,12 +738,22 @@ export function assemble_riscv(text, origin) {
         }
 
         const tokens = line.split(REGEX_TOKENIZE);
-        const p = { i: 0 };
+        const p = { i: 0, loc_counter };
 
         if (p.i + 2 <= tokens.length && tokens[p.i + 1] === ':') {
             const l = tokens[p.i++]; // Consume label
-            label.set(l, pc);
             p.i++;
+            if (/^\d+$/.test(l)) {
+                // local label
+                if (! loc_counter.has(l))
+                    loc_counter.set(l, 0);
+
+                const suffix = loc_counter.get(l);
+                loc_counter.set(l, suffix + 1)
+                loc.set(`${l}.${suffix + 1}`, pc);
+            } else {
+                label.set(l, pc);
+            }
         }
 
         if (p.i < tokens.length && tokens[p.i] != '#') {
@@ -759,6 +785,8 @@ export function assemble_riscv(text, origin) {
             }
         }
     }
+
+    console.log(loc, loc_counter)
 
     const buf = new ArrayBuffer(pc - origin);
     const view = new DataView(buf);
@@ -795,7 +823,7 @@ export function assemble_riscv(text, origin) {
                     type: 'ok',
                     value: expr.value
                 };
-            } else if (expr.type == 'label') {
+            } else if (expr.type === 'label') {
                 if (label.has(expr.label)) {
                     return {
                         type: 'ok',
@@ -805,6 +833,18 @@ export function assemble_riscv(text, origin) {
                     return {
                         type: 'error',
                         message: `Unknown label ${expr.label}`
+                    };
+                }
+            } else if (expr.type === 'loc') {
+                if (loc.has(`${expr.base}.${expr.suffix}`)) {
+                    return {
+                        type: 'ok',
+                        value: loc.get(`${expr.base}.${expr.suffix}`)
+                    };
+                } else {
+                    return {
+                        type: 'error',
+                        message: `Unknown reference to local label ${expr.base} number ${expr.suffix}`
                     };
                 }
             } else if (expr.type === 'special') {
