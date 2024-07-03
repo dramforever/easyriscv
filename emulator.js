@@ -166,7 +166,6 @@ export class RiscvState {
                     if (jump_dest & 0b11) {
                         return this.exception(CAUSE_CODE.misaligned_fetch, 0);
                     } else {
-                        write_rd((insn >>> 7) & 0b11111, this.pc + 4);
                         this.pc = jump_dest;
                         return { type: 'ok' };
                     }
