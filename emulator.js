@@ -1,5 +1,3 @@
-
-
 export class RiscvMemory {
     constructor(size) {
         this.memory = new ArrayBuffer(size);
@@ -19,7 +17,6 @@ export class RiscvMemory {
     }
 
     read(address, width) {
-        // console.log('read', address.toString(16).padStart(8, '0'), width);
         const mem_top = this.mem_base + this.memory.byteLength;
         if (this.mem_base <= address && address <= mem_top - width) {
             const offset = address - this.mem_base;
@@ -44,7 +41,6 @@ export class RiscvMemory {
     }
 
     write(address, width, data) {
-        // console.log('write', address.toString(16).padStart(8, '0'), data.toString(16).padStart(2 * width, '0'));
         const mem_top = this.mem_base + this.memory.byteLength;
         if (this.mem_base <= address && address <= mem_top - width) {
             const offset = address - this.mem_base;
@@ -211,7 +207,6 @@ export class RiscvState {
                 const width = 1 << ((insn >>> 12) & 0b011);
                 const op = this.regs[(insn >>> 20) & 0b11111];
                 const data = op << (32 - width * 8) >>> (32 - width * 8);
-                console.log(insn, (insn >>> 15) & 0b11111, this.regs[(insn >>> 15) & 0b11111]);
                 const res = this.memory.write(addr, width, data);
                 if (res === null) {
                     return this.exception(CAUSE_CODE.store_access, addr);
