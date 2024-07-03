@@ -1,5 +1,5 @@
-const REGEX_OPERATOR = /[#&()*+,/^|~:-]/;
-const REGEX_TOKENIZE = /\s+|(?=[#&()*+,/^|~:-])|(?<=[#&()*+,/^|~:-])/;
+const REGEX_OPERATOR = /[#&()*+,/^|~:]/;
+const REGEX_TOKENIZE = /\s+|(?=[#&()*+,/^|~:])|(?<=[#&()*+,/^|~:])/;
 const REGS = (() => {
     const regs = new Map();
     for (let i = 0; i < 32; i++) {
@@ -40,7 +40,7 @@ function parse_value(tokens, p) {
             type: 'error',
             message: 'Expecting value, got end of line'
         };
-    } else if (/^[0-9]\w*$/.test(tokens[p.i])) {
+    } else if (/^-?[0-9]\w*$/.test(tokens[p.i])) {
         const res = Number(tokens[p.i]);
         if (Number.isSafeInteger(res)) {
             p.i++;
@@ -118,7 +118,7 @@ function parse_mem(tokens, p) {
             },
             register: {
                 type: 'register',
-                register: REGS.get(reg)
+                register: reg
             }
         };
     }

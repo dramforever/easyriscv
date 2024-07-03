@@ -5,7 +5,7 @@ export class RiscvMemory {
         this.memory = new ArrayBuffer(size);
         this.memory_view = new DataView(this.memory);
         this.mem_base = 0x4000_0000;
-        this.debug_base = 0x1000_0000;
+        this.debug_base = 0x10_0000;
     }
 
     fetch(address) {
@@ -93,7 +93,10 @@ export class RiscvState {
 
     exception(cause, tval) {
         console.error('exception', cause, tval);
-        return null;
+        return {
+            type: 'exception',
+            cause, tval
+        };
     }
 
     step() {
@@ -110,7 +113,7 @@ export class RiscvState {
             const add = (insn & 0b0100000) ? 0 : this.pc;
             write_rd((insn >>> 7) & 0b11111, ((insn >> 12 << 12) + add) >>> 0);
             this.pc = (this.pc + 4) >>> 0;
-            return true;
+            return { type: 'ok' };
         } else if ((insn & 0b1111111) === 0b1101111) { // jal
             const imm =
                 (insn >> 31 << 20)
@@ -125,7 +128,7 @@ export class RiscvState {
             } else {
                 write_rd((insn >>> 7) & 0b11111, this.pc + 4);
                 this.pc = jump_dest;
-                return true;
+                return { type: 'ok' };
             }
         } else if ((insn & 0b1111111) === 0b1100111) {
             if (((insn >>> 12) & 0b111) === 0b000) { // jalr
@@ -136,7 +139,7 @@ export class RiscvState {
                 } else {
                     write_rd((insn >>> 7) & 0b11111, this.pc + 4);
                     this.pc = jump_dest;
-                    return true;
+                    return { type: 'ok' };
                 }
             } else {
                 return this.exception(CAUSE_CODE.illegal_instruction, insn);
@@ -169,11 +172,11 @@ export class RiscvState {
                     } else {
                         write_rd((insn >>> 7) & 0b11111, this.pc + 4);
                         this.pc = jump_dest;
-                        return true;
+                        return { type: 'ok' };
                     }
                 } else {
                     this.pc = (this.pc + 4) >>> 0;
-                    return true;
+                    return { type: 'ok' };
                 }
             }
         } else if ((insn & 0b1111111) === 0b0000011) {
@@ -194,7 +197,7 @@ export class RiscvState {
                         : (res << (32 - width * 8) >> (32 - width * 8)) >>> 0;
                     write_rd((insn >>> 7) & 0b11111, load_res);
                     this.pc = (this.pc + 4) >>> 0;
-                    return true;
+                    return { type: 'ok' };
                 }
             }
         } else if ((insn & 0b1111111) === 0b0100011) {
@@ -208,12 +211,13 @@ export class RiscvState {
                 const width = 1 << ((insn >>> 12) & 0b011);
                 const op = this.regs[(insn >>> 20) & 0b11111];
                 const data = op << (32 - width * 8) >>> (32 - width * 8);
+                console.log(insn, (insn >>> 15) & 0b11111, this.regs[(insn >>> 15) & 0b11111]);
                 const res = this.memory.write(addr, width, data);
                 if (res === null) {
                     return this.exception(CAUSE_CODE.store_access, addr);
                 } else {
                     this.pc = (this.pc + 4) >>> 0;
-                    return true;
+                    return { type: 'ok' };
                 }
             }
         } else if ((insn & 0b1011111) === 0b0010011) {
@@ -258,13 +262,13 @@ export class RiscvState {
 
             write_rd((insn >>> 7) & 0b11111, result >>> 0);
             this.pc = (this.pc + 4) >>> 0;
-            return true;
+            return { type: 'ok' };
         } else if ((insn & 0b1111111) === 0b0001111) {
             if (((insn >>> 12) & 0b111) === 0b000) {
                 // fence
                 // do nothing
                 this.pc = (this.pc + 4) >>> 0;
-                return true;
+                return { type: 'ok' };
             } else {
                 return this.exception(CAUSE_CODE.illegal_instruction, insn);
             }
