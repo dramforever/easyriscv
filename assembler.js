@@ -673,7 +673,7 @@ const WORDS = (() => {
 
     words.set('ret', process_instruction('', assemble_nullary(32871)));
 
-    words.set('j', process_instruction('o', (parsed, args) => {
+    words.set('j', process_instruction('o', (parsed, args) =>
         assemble_jal({
             type: 'instruction',
             length: 4,
@@ -687,11 +687,10 @@ const WORDS = (() => {
                     parsed.data.values[0]
                 ]
             }
-        }, args);
-        return { type: 'ok' };
-    }));
+        }, args)
+    ));
 
-    words.set('jr', process_instruction('r', (parsed, args) => {
+    words.set('jr', process_instruction('r', (parsed, args) =>
         assemble_rm_itype(103)({
             type: 'instruction',
             length: 4,
@@ -712,9 +711,8 @@ const WORDS = (() => {
                     }
                 ]
             }
-        }, args);
-        return { type: 'ok' };
-    }));
+        }, args)
+    ));
 
     return words;
 })();
