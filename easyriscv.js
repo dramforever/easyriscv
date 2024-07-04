@@ -9,7 +9,7 @@ class EmulatorMemory extends RiscvMemory {
 
     read(address, width) {
         if (address === 0x1000_0000) {
-            if (width == 4) {
+            if (width === 4 || width == 1) {
                 return 0;
             } else {
                 return null;
@@ -21,7 +21,7 @@ class EmulatorMemory extends RiscvMemory {
 
     write(address, width, data) {
         if (address === 0x1000_0000) {
-            if (width == 4) {
+            if (width === 4 || width == 1) {
                 this.serialWrite(data & 0xff);
                 return true;
             } else {

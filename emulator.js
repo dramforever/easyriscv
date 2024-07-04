@@ -3,7 +3,7 @@ export class RiscvMemory {
         this.memory = new ArrayBuffer(size);
         this.memory_view = new DataView(this.memory);
         this.mem_base = 0x4000_0000;
-        this.debug_base = 0x10_0000;
+        this.debug_base = 0x1000_0000;
     }
 
     fetch(address) {
@@ -30,7 +30,7 @@ export class RiscvMemory {
                 return null;
             }
         } else if (address === this.debug_base) {
-            if (width === 4) {
+            if (width === 4 || width == 1) {
                 return 0;
             } else {
                 return null;
@@ -57,7 +57,7 @@ export class RiscvMemory {
                 return null;
             }
         } else if (address === this.debug_base) {
-            if (width === 4) {
+            if (width === 4 || width == 1) {
                 console.log(`${(data & 0xff).toString(16).padStart(2, '0')} (${String.fromCodePoint(data & 0xff)})`);
                 return true;
             } else {
