@@ -48,6 +48,10 @@ function convertEmulator(el) {
     el.classList.add('emulator');
 
     const edit = document.createElement('textarea');
+    edit.autocomplete = false;
+    edit.autocapitalize = false;
+    edit.placeholder = '    # code here...';
+
     edit.value = text;
     edit.classList.add('emulator-edit');
 
@@ -183,6 +187,7 @@ function convertEmulator(el) {
         started = false;
         writeOutput('[ Stopped ]\n')
         updateUI();
+        edit.focus();
     }
 
     const CAUSES = new Map([
@@ -248,6 +253,37 @@ function convertEmulator(el) {
         running = false;
         clearTimeout(runTask);
         updateUI();
+    }
+
+    edit.onkeydown = (event) => {
+        if (event.key === 'Tab' && ! event.ctrlKey && ! event.altKey && ! event.altKey && ! event.shiftKey) {
+            const text = edit.value;
+
+            const prev = text.lastIndexOf('\n', Math.max(0, edit.selectionStart - 1));
+            const start = prev === -1 ? 0 : prev;
+
+            if (edit.selectionStart === edit.selectionEnd) {
+                const caret = edit.selectionStart;
+                const add = 4 - ((caret - prev - 1) % 4 + 4) % 4;
+                const data = Array(add).fill(' ').join('');
+                document.execCommand('insertText', false, data);
+            }
+            event.preventDefault();
+        } else if (event.key === 'Enter' && event.shiftKey && ! event.ctrlKey && ! event.altKey && ! event.altKey) {
+            event.preventDefault();
+
+            start();
+            if (started) {
+                stepBtn.focus();
+            }
+        } else if (event.key === 'Enter' && event.ctrlKey && ! event.altKey && ! event.altKey && ! event.shiftKey) {
+            event.preventDefault();
+
+            start();
+            if (started) {
+                run();
+            }
+        }
     }
 
     runBtn.onclick = () => {
