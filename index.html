@@ -37,11 +37,23 @@
             display: flex;
             flex-direction: column;
             justify-content: start;
-            gap: 1em;
+            gap: 0.5em;
         }
 
         .emulator .emulator-controls button {
             padding: 0.5em 1em;
+        }
+
+        .emulator .emulator-controls .emulator-checkbox {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-around;
+            align-items: center;
+            gap: 0.5em;
+        }
+
+        .emulator .emulator-controls .emulator-checkbox label {
+            flex-grow: 1;
         }
 
         .emulator .emulator-regs {

@@ -34,6 +34,8 @@ class EmulatorMemory extends RiscvMemory {
 
 }
 
+let counter = 0;
+
 /**
  * @param {HTMLDivElement} el
  */
@@ -69,11 +71,41 @@ function convertEmulator(el) {
     startStopBtn.append('Start');
     const clearBtn = document.createElement('button');
     clearBtn.append('Clear');
-    controls.append(runBtn, stepBtn, startStopBtn, clearBtn);
 
+    const pauseOnExc = document.createElement('div');
+    pauseOnExc.classList.add('emulator-checkbox');
+    const pauseOnExcCheck = document.createElement('input');
+    pauseOnExcCheck.type = 'checkbox';
+    pauseOnExcCheck.checked = true;
+    pauseOnExcCheck.id = `pause-on-exc-${counter}`;
+    const pauseOnExcLabel = document.createElement('label');
+    pauseOnExcLabel.append('Pause on exc.');
+    pauseOnExcLabel.htmlFor = `pause-on-exc-${counter}`;
+    counter ++;
+    pauseOnExc.append(pauseOnExcCheck, pauseOnExcLabel)
+
+    const printOnExc = document.createElement('div');
+    printOnExc.classList.add('emulator-checkbox');
+    const printOnExcCheck = document.createElement('input');
+    printOnExcCheck.type = 'checkbox';
+    printOnExcCheck.checked = true;
+    printOnExcCheck.id = `print-on-exc-${counter}`;
+    const printOnExcLabel = document.createElement('label');
+    printOnExcLabel.append('Print on exc.');
+    printOnExcLabel.htmlFor = `print-on-exc-${counter}`;
+    counter ++;
+    printOnExc.append(printOnExcCheck, printOnExcLabel)
+
+    controls.append(runBtn, stepBtn, startStopBtn, clearBtn, pauseOnExc, printOnExc);
+
+    let pauseOnException = false;
+    let printOnException = false;
     let running = false, started = false;
 
     function updateUI() {
+        pauseOnException = pauseOnExcCheck.checked;
+        printOnException = printOnExcCheck.checked;
+
         edit.disabled = started;
         runBtn.disabled = ! started;
         runBtn.textContent = running ? 'Pause' : 'Run';
@@ -82,6 +114,8 @@ function convertEmulator(el) {
         startStopBtn.disabled = running && started;
     }
 
+    pauseOnExcCheck.onchange = updateUI;
+    printOnExcCheck.onchange = updateUI;
     updateUI();
 
     let mem = null, riscv = null, runTask = null;
@@ -173,7 +207,9 @@ function convertEmulator(el) {
             stop();
         } else {
             renderRegs();
-            writeOutput(fmtException(res));
+            if (printOnException) {
+                writeOutput(fmtException(res));
+            }
         }
     }
 
@@ -185,9 +221,13 @@ function convertEmulator(el) {
         for (let count = 0; count < LIMIT; count ++) {
             const res = riscv.step();
             if (res.type === 'exception') {
-                renderRegs();
-                writeOutput(fmtException(res));
-                pause();
+                if (printOnException) {
+                    writeOutput(fmtException(res));
+                }
+                if (pauseOnException) {
+                    renderRegs();
+                    pause();
+                }
                 break;
             } else if (res.type === 'stop') {
                 renderRegs();
