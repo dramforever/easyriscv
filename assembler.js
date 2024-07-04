@@ -708,6 +708,42 @@ const WORDS = (() => {
         }, args)
     ));
 
+    words.set('mv', process_instruction('rr', (parsed, args) =>
+        assemble_rri_itype(0x00000013)({
+            type: 'instruction',
+            length: 4,
+            data: {
+                type: 'multiple',
+                values: [
+                    parsed.data.values[0],
+                    parsed.data.values[1],
+                    {
+                        type: 'number',
+                        value: 0
+                    }
+                ]
+            }
+        }, args)
+    ));
+
+    words.set('li', process_instruction('ro', (parsed, args) =>
+        assemble_rri_itype(0x00000013)({
+            type: 'instruction',
+            length: 4,
+            data: {
+                type: 'multiple',
+                values: [
+                    parsed.data.values[0],
+                    {
+                        type: 'register',
+                        register: 0
+                    },
+                    parsed.data.values[1]
+                ]
+            }
+        }, args)
+    ));
+
     words.set('jr', process_instruction('r', (parsed, args) =>
         assemble_rm_itype(0x00000067)({
             type: 'instruction',
