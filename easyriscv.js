@@ -86,6 +86,8 @@ function convertEmulator(el) {
 
     let mem = null, riscv = null, runTask = null;
 
+    const fmt = (x) => `0x${x.toString(16).padStart(8, '0')}`;
+
     function renderRegs() {
         const lines = [];
         const names = "zero ra sp gp tp t0 t1 t2 s0 s1 a0 a1 a2 a3 a4 a5 a6 a7 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 t3 t4 t5 t6".split(' ');
@@ -96,10 +98,17 @@ function convertEmulator(el) {
             const end = i % 2 ? '\n' : '  |  ';
             lines.push(`${names[i].padStart(4, ' ')} ${`(x${i})`.padStart(5, ' ')} ${fmt(riscv.regs[i])} = ${(riscv.regs[i] | 0).toString().padStart(10, ' ')}${end}`);
         }
+        lines.push('\n');
+        lines.push(`(priv) = ${riscv.priv} | mstatus = { MPP = ${riscv.mpp} }\n`);
+        lines.push(`mscratch = ${fmt(riscv.mscratch)} | `);
+        lines.push(`mtvec = ${fmt(riscv.mtvec)}\n`);
+        lines.push(`mcause = ${fmt(riscv.mepc)} | `);
+        lines.push(`mepc = ${fmt(riscv.mepc)} | `);
+        lines.push(`mtval = ${fmt(riscv.mtval)}\n`);
+        lines.push(`cycle = ${riscv.cycle[1].toString(16).padStart(8, '0')}_${riscv.cycle[0].toString(16).padStart(8, '0')} | `);
+        lines.push(`instret = ${riscv.instret[1].toString(16).padStart(8, '0')}_${riscv.instret[0].toString(16).padStart(8, '0')}\n`);
         regsDisp.textContent = lines.join('');
     }
-
-    const fmt = (x) => `0x${x.toString(16).padStart(8, '0')}`;
 
     function writeOutput(text) {
         output.textContent += text;
@@ -144,11 +153,13 @@ function convertEmulator(el) {
 
     function step() {
         const res = riscv.step();
-        if (res.type == 'ok') {
+        if (res.type === 'ok') {
             renderRegs();
-        } else {
-            writeOutput(`[ Exception cause ${res.cause}, tval = ${fmt(res.tval)}, at pc = ${fmt(riscv.pc)} ]\n`)
+        } else if (res.type === 'stop') {
             stop();
+        } else {
+            renderRegs();
+            writeOutput(`[ Exception cause ${res.cause}, tval = ${fmt(res.tval)}, at pc = ${fmt(riscv.pc)} ]\n`)
         }
     }
 
@@ -159,9 +170,13 @@ function convertEmulator(el) {
 
         for (let count = 0; count < LIMIT; count ++) {
             const res = riscv.step();
-            if (res.type !== 'ok') {
+            if (res.type === 'exception') {
                 renderRegs();
                 writeOutput(`[ Exception cause ${res.cause}, tval = ${fmt(res.tval)}, at pc = ${fmt(riscv.pc)} ]\n`)
+                pause();
+                break;
+            } else if (res.type === 'stop') {
+                renderRegs();
                 stop();
                 break;
             }
@@ -170,7 +185,9 @@ function convertEmulator(el) {
         renderRegs();
         updateUI();
 
-        runTask = setTimeout(run, 0);
+        if (running) {
+            runTask = setTimeout(run, 0);
+        }
     }
 
     function pause() {

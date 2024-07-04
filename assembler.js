@@ -207,11 +207,56 @@ function parse_multiple(tokens, p) {
     };
 }
 
+const CSR = new Map([
+    [ "mstatus", 0x300 ],
+    [ "mtvec", 0x305 ],
+    [ "mscratch", 0x340 ],
+    [ "mepc", 0x341 ],
+    [ "mcause", 0x342 ],
+    [ "mtval", 0x343 ],
+    [ "cycle", 0xc00 ],
+    [ "instret", 0xc02 ],
+    [ "cycleh", 0xc80 ],
+    [ "instreth", 0xc82 ]
+]);
+
+function parse_csr(tokens, p) {
+    if (p.i >= tokens.length) {
+        return {
+            type: 'error',
+            message: 'Expecting CSR name or number, got end of line'
+        };
+    } else if (CSR.has(tokens[p.i])) {
+        const csr = CSR.get(tokens[p.i]);
+        p.i ++;
+        return {
+            type: 'csr',
+            csr
+        };
+    } else {
+        const csr = Number(tokens[p.i]);
+        if (Number.isSafeInteger(csr) && 0 <= csr && csr < 0x1000) {
+            p.i ++;
+            return {
+                type: 'csr',
+                csr
+            };
+        } else {
+            return {
+                type: 'error',
+                message: `Expecting CSR name or number, got ${tokens[p.i]}`
+            };
+        }
+    }
+}
+
+
 const OPERAND_TYPES = (() => {
     const types = new Map();
     types.set('r', parse_reg);
     types.set('m', parse_mem);
     types.set('o', parse_operand);
+    types.set('c', parse_csr);
     return types;
 })();
 
@@ -511,6 +556,59 @@ function assemble_jal(parsed, { evaluate, view, offset, pc }) {
     return { type: 'ok' };
 }
 
+function assemble_csr_r(base) {
+    return (parsed, { view, offset }) => {
+        const rd = parsed.data.values[0].register;
+        const csr = parsed.data.values[1].csr
+        const rs1 = parsed.data.values[2].register;
+
+        const insn = base | (rd << 7) | (csr << 20) | (rs1 << 15);
+
+        view.setUint32(offset, insn, /* littleEndian */ true);
+        return { type: 'ok' };
+    }
+}
+
+function assemble_csr_i(base) {
+    return (parsed, { view, offset }) => {
+        const rd = parsed.data.values[0].register;
+        const csr = parsed.data.values[1].csr
+        const res = evaluate(parsed.data.values[2]);
+        if (res.type === 'error') {
+            return res;
+        }
+        const { value } = res;
+        if (value < 0 || value >= 32) {
+            return {
+                type: 'error',
+                message: `CSR instruction immediat ${value} out of range`
+            };
+        }
+
+        const insn = base | (rd << 7) | (value << 20) | (rs1 << 15);
+
+        view.setUint32(offset, insn, /* littleEndian */ true);
+        return { type: 'ok' };
+    }
+}
+
+function csr_pseudo(parsed) {
+    return {
+        type: 'instruction',
+        length: 4,
+        data: {
+            type: 'multiple',
+            values: [
+                {
+                    type: 'register',
+                    register: 0 // zero
+                },
+                ... parsed.data.values
+            ]
+        }
+    }
+}
+
 const WORDS = (() => {
     const words = new Map();
     words.set('.byte', process_data(1));
@@ -767,6 +865,51 @@ const WORDS = (() => {
             }
         }, args)
     ));
+
+    words.set('csrrw',  process_instruction('rcr', assemble_csr_r(0x00001073)));
+    words.set('csrrs',  process_instruction('rcr', assemble_csr_r(0x00002073)));
+    words.set('csrrc',  process_instruction('rcr', assemble_csr_r(0x00003073)));
+    words.set('csrrwi', process_instruction('rco', assemble_csr_i(0x00005073)));
+    words.set('csrrsi', process_instruction('rco', assemble_csr_i(0x00006073)));
+    words.set('csrrci', process_instruction('rco', assemble_csr_i(0x00007073)));
+
+    words.set('csrw',  process_instruction('cr', (parsed, args) =>
+        assemble_csr_r(0x00001073)(csr_pseudo(parsed), args)
+    ));
+    words.set('csrs',  process_instruction('cr', (parsed, args) =>
+        assemble_csr_r(0x00002073)(csr_pseudo(parsed), args)
+    ));
+    words.set('csrc',  process_instruction('cr', (parsed, args) =>
+        assemble_csr_r(0x00003073)(csr_pseudo(parsed), args)
+    ));
+    words.set('csrwi', process_instruction('co', (parsed, args) =>
+        assemble_csr_i(0x00005073)(csr_pseudo(parsed), args)
+    ));
+    words.set('csrsi', process_instruction('co', (parsed, args) =>
+        assemble_csr_i(0x00006073)(csr_pseudo(parsed), args)
+    ));
+    words.set('csrci', process_instruction('co', (parsed, args) =>
+        assemble_csr_i(0x00007073)(csr_pseudo(parsed), args)
+    ));
+
+    words.set('csrr',  process_instruction('rc', (parsed, args) =>
+        assemble_csr_r(0x00002073)({
+            type: 'instruction',
+            length: 4,
+            data: {
+                type: 'multiple',
+                values: [
+                    ... parsed.data.values,
+                    {
+                        type: 'register',
+                        register: 0 // zero
+                    }
+                ]
+            }
+        }, args)
+    ));
+
+    words.set('mret', process_instruction('', assemble_nullary(0x30200073)));
 
     return words;
 })();
