@@ -278,7 +278,7 @@ function convertEmulator(el) {
             }
         } else if (event.key === 'Enter' && event.ctrlKey && ! event.altKey && ! event.altKey && ! event.shiftKey) {
             event.preventDefault();
-
+            output.textContent = '';
             start();
             if (started) {
                 run();
