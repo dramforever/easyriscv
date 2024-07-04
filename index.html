@@ -75,11 +75,9 @@
 </head>
 
 <body>
-    <div class="emulator-disabled"># welcome to easyriscv emulator
-start:
+    <div class="emulator-disabled">    # welcome to easyriscv emulator
 
-1:  auipc s1, %pcrel_hi(msg)
-    addi s1, s1, %pcrel_lo(1b)
+    la s1, msg
 
 1:  lbu a0, (s1)
     beq a0, zero, 2f

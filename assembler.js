@@ -842,6 +842,38 @@ const WORDS = (() => {
         }, args)
     ));
 
+    words.set('la', {
+        parse(tokens, p) {
+            const data = parse_types('ro', tokens, p);
+            if (data.type === 'error') {
+                return data;
+            }
+
+            return {
+                type: 'instruction',
+                length: 8,
+                data
+            };
+        },
+        assemble(parsed, { evaluate, view, offset, pc }) {
+            const rd = parsed.data.values[0].register;
+            const res = evaluate(parsed.data.values[1]);
+            if (res.type === 'error') {
+                return res;
+            }
+            const { value } = res;
+            const rel = (value - pc) >>> 0;
+            const high = (rel >> 12 << 12) + ((rel & 0x800) !== 0);
+
+            const auipc = 0x00000017 | (rd << 7) | high;
+            const addi = 0x00000013 | (rd << 7) | (rd << 15) | ((rel & 0xfff) << 20);
+
+            view.setUint32(offset, auipc, /* littleEndian */ true);
+            view.setUint32(offset + 4, addi, /* littleEndian */ true);
+            return { type: 'ok' };
+        }
+    });
+
     words.set('jr', process_instruction('r', (parsed, args) =>
         assemble_rm_itype(0x00000067)({
             type: 'instruction',
