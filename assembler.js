@@ -2,7 +2,7 @@ const REGEX_OPERATOR = /[#&()*+,/^|~:]/;
 const REGEX_TOKENIZE = /\s+|(?=[#&()*+,/^|~:])|(?<=[#&()*+,/^|~:])/;
 const REGS = (() => {
     const regs = new Map();
-    for (let i = 0; i < 32; i++) {
+    for (let i = 0; i < 32; i ++) {
         regs.set(`x${i}`, i);
     }
 
@@ -14,6 +14,7 @@ const REGS = (() => {
 
     return regs;
 })();
+
 function parse_reg(tokens, p) {
     if (p.i >= tokens.length) {
         return {
@@ -22,7 +23,7 @@ function parse_reg(tokens, p) {
         };
     } else if (REGS.has(tokens[p.i])) {
         const register = REGS.get(tokens[p.i]);
-        p.i++;
+        p.i ++;
         return {
             type: 'register',
             register
@@ -34,6 +35,7 @@ function parse_reg(tokens, p) {
         };
     }
 }
+
 function parse_value(tokens, p) {
     if (p.i >= tokens.length) {
         return {
@@ -43,7 +45,7 @@ function parse_value(tokens, p) {
     } else if (/^-?(?:[0-9]+|0\w+)$/.test(tokens[p.i])) {
         const res = Number(tokens[p.i]);
         if (Number.isSafeInteger(res)) {
-            p.i++;
+            p.i ++;
             return {
                 type: 'number',
                 value: res
@@ -82,20 +84,21 @@ function parse_value(tokens, p) {
         };
     }
 }
+
 function parse_operand(tokens, p) {
     if (p.i < tokens.length && /%\w+/.test(tokens[p.i])) {
-        const SPECIAL = ['%hi', '%lo', '%pcrel_hi', '%pcrel_lo'];
+        const SPECIAL = [ '%hi', '%lo', '%pcrel_hi', '%pcrel_lo' ];
         if (SPECIAL.includes(tokens[p.i])) {
             const special = tokens[p.i];
             const invalid = {
                 type: 'error',
                 message: `Invalid use of ${special}`
-            };
-            p.i++;
+            }
+            p.i ++;
             if (p.i >= tokens.length || tokens[p.i] !== '(') {
                 return invalid;
             }
-            p.i++;
+            p.i ++;
             const inner = parse_value(tokens, p);
             if (inner.type === 'error') {
                 return inner;
@@ -104,7 +107,7 @@ function parse_operand(tokens, p) {
             if (p.i >= tokens.length || tokens[p.i] !== ')') {
                 return invalid;
             }
-            p.i++;
+            p.i ++;
             return {
                 type: 'special',
                 special, inner,
@@ -119,6 +122,7 @@ function parse_operand(tokens, p) {
         return parse_value(tokens, p);
     }
 }
+
 function parse_mem(tokens, p) {
     if (p.i + 3 <= tokens.length
         && tokens[p.i] === '('
@@ -153,7 +157,7 @@ function parse_mem(tokens, p) {
         };
     }
 
-    p.i++;
+    p.i ++;
 
     const register = parse_reg(tokens, p);
 
@@ -168,13 +172,14 @@ function parse_mem(tokens, p) {
         };
     }
 
-    p.i++;
+    p.i ++;
 
     return {
         type: 'memory',
         offset, register
     };
 }
+
 function parse_multiple(tokens, p) {
     const values = [];
 
@@ -187,7 +192,7 @@ function parse_multiple(tokens, p) {
         if (p.i >= tokens.length || tokens[p.i] === '#') {
             break;
         } else if (tokens[p.i] === ',') {
-            p.i++;
+            p.i ++;
         } else {
             return {
                 type: 'error',
@@ -201,6 +206,7 @@ function parse_multiple(tokens, p) {
         values
     };
 }
+
 const OPERAND_TYPES = (() => {
     const types = new Map();
     types.set('r', parse_reg);
@@ -208,15 +214,16 @@ const OPERAND_TYPES = (() => {
     types.set('o', parse_operand);
     return types;
 })();
+
 function parse_types(types, tokens, p) {
     const values = [];
     let first = true;
-    for (const t of [...types]) {
+    for (const t of [... types]) {
         if (first) {
             first = false;
         } else {
             if (p.i < tokens.length || tokens[p.i] === ',') {
-                p.i++;
+                p.i ++;
             } else {
                 return {
                     type: 'error',
@@ -243,6 +250,7 @@ function parse_types(types, tokens, p) {
         values
     };
 }
+
 function process_data(width) {
     return {
         parse(tokens, p) {
@@ -251,7 +259,7 @@ function process_data(width) {
                 return multiple;
             }
 
-            if (!(p.i >= tokens.length || tokens[p.i] === '#')) {
+            if (! (p.i >= tokens.length || tokens[p.i] === '#')) {
                 return {
                     type: 'error',
                     message: `Expecting, got ${tokens[p.i]}`
@@ -274,7 +282,7 @@ function process_data(width) {
                 const { value } = res;
 
                 // Avoid shift overflow with Math.pow
-                if (value < -Math.pow(2, width * 8 - 1) || value >= Math.pow(2, width * 8)) {
+                if (value < - Math.pow(2, width * 8 - 1) || value >= Math.pow(2, width * 8)) {
                     return {
                         type: 'error',
                         message: `Value ${value} out of range`
@@ -298,6 +306,7 @@ function process_data(width) {
         }
     };
 }
+
 function process_instruction(types, assemble) {
     return {
         parse(tokens, p) {
@@ -315,6 +324,7 @@ function process_instruction(types, assemble) {
         assemble
     };
 }
+
 function assemble_rri_itype(base) {
     return (parsed, { evaluate, view, offset }) => {
         const rd = parsed.data.values[0].register;
@@ -324,7 +334,7 @@ function assemble_rri_itype(base) {
             return res;
         };
         const { value } = res;
-        if (value < -(1 << 11) || value >= (1 << 11)) {
+        if (value < - (1 << 11) || value >= (1 << 11)) {
             return {
                 type: 'error',
                 message: `Immediate value ${value} out of range`
@@ -336,6 +346,7 @@ function assemble_rri_itype(base) {
         return { type: 'ok' };
     };
 }
+
 function assemble_rri_shift(base) {
     return (parsed, { evaluate, view, offset }) => {
         const rd = parsed.data.values[0].register;
@@ -357,6 +368,7 @@ function assemble_rri_shift(base) {
         return { type: 'ok' };
     };
 }
+
 function assemble_rm_itype(base) {
     return (parsed, { evaluate, view, offset }) => {
         const rd = parsed.data.values[0].register;
@@ -367,7 +379,7 @@ function assemble_rm_itype(base) {
         };
 
         const { value } = res;
-        if (value < -(1 << 11) || value >= (1 << 11)) {
+        if (value < - (1 << 11) || value >= (1 << 11)) {
             return {
                 type: 'error',
                 message: `Immediate value ${value} out of range`
@@ -379,6 +391,7 @@ function assemble_rm_itype(base) {
         return { type: 'ok' };
     };
 }
+
 function assemble_rm_stype(base) {
     return (parsed, { evaluate, view, offset }) => {
         const rs2 = parsed.data.values[0].register;
@@ -389,7 +402,7 @@ function assemble_rm_stype(base) {
         };
 
         const { value } = res;
-        if (value < -(1 << 11) || value >= (1 << 11)) {
+        if (value < - (1 << 11) || value >= (1 << 11)) {
             return {
                 type: 'error',
                 message: `Immediate value ${value} out of range`
@@ -400,11 +413,12 @@ function assemble_rm_stype(base) {
             | (rs1 << 15)
             | (rs2 << 20)
             | ((value >> 5) << 25)
-            | ((value & 31) << 7);
+            | ((value & 0b11111) << 7);
         view.setUint32(offset, insn, /* littleEndian */ true);
         return { type: 'ok' };
     };
 }
+
 function assemble_branch(base) {
     return (parsed, { evaluate, view, offset, pc }) => {
         const rs1 = parsed.data.values[0].register;
@@ -416,7 +430,7 @@ function assemble_branch(base) {
 
         const { value } = res;
         const rel = value - pc;
-        if (rel < -(1 << 11) || rel >= (1 << 11)) {
+        if (rel < - (1 << 11) || rel >= (1 << 11)) {
             return {
                 type: 'error',
                 message: `Jump target ${rel} out of range`
@@ -434,14 +448,15 @@ function assemble_branch(base) {
             | (rs1 << 15)
             | (rs2 << 20)
             | (rel >>> 12) << 31
-            | ((rel >>> 11) & 1) << 7
-            | ((rel >>> 5) & 63) << 25
-            | ((rel >>> 1) & 15) << 8;
+            | ((rel >>> 11) & 0b1) << 7
+            | ((rel >>> 5) & 0b111111) << 25
+            | ((rel >>> 1) & 0b1111) << 8;
 
         view.setUint32(offset, insn, /* littleEndian */ true);
         return { type: 'ok' };
     };
 }
+
 function assemble_rrr(base) {
     return (parsed, { view, offset }) => {
         const rd = parsed.data.values[0].register;
@@ -452,12 +467,14 @@ function assemble_rrr(base) {
         return { type: 'ok' };
     };
 }
+
 function assemble_nullary(base) {
     return (parsed, { view, offset }) => {
         view.setUint32(offset, base, /* littleEndian */ true);
         return { type: 'ok' };
     };
 }
+
 function assemble_jal(parsed, { evaluate, view, offset, pc }) {
     const rd = parsed.data.values[0].register;
     const res = evaluate(parsed.data.values[1]);
@@ -468,7 +485,7 @@ function assemble_jal(parsed, { evaluate, view, offset, pc }) {
     const { value } = res;
     const rel = value - pc;
 
-    if (rel < -(1 << 20) || rel >= (1 << 20)) {
+    if (rel < - (1 << 20) || rel >= (1 << 20)) {
         return {
             type: 'error',
             message: `Jump offset ${rel} out of range`
@@ -483,16 +500,17 @@ function assemble_jal(parsed, { evaluate, view, offset, pc }) {
         };
     }
 
-    const insn = 111
+    const insn = 0x0000006f
         | (rd << 7)
         | ((rel >> 20) << 31)
-        | (((rel >>> 12) & 255) << 12)
-        | (((rel >>> 11) & 1) << 20)
-        | (((rel >>> 1) & 1023) << 21);
+        | (((rel >>> 12) & 0b11111111) << 12)
+        | (((rel >>> 11) & 0b1) << 20)
+        | (((rel >>> 1) & 0b1111111111) << 21)
 
     view.setUint32(offset, insn, /* littleEndian */ true);
     return { type: 'ok' };
 }
+
 const WORDS = (() => {
     const words = new Map();
     words.set('.byte', process_data(1));
@@ -501,44 +519,44 @@ const WORDS = (() => {
     words.set('.word', process_data(4));
     words.set('.4byte', process_data(4));
 
-    words.set('addi', process_instruction('rro', assemble_rri_itype(19)));
-    words.set('slti', process_instruction('rro', assemble_rri_itype(8211)));
-    words.set('sltiu', process_instruction('rro', assemble_rri_itype(12307)));
-    words.set('xori', process_instruction('rro', assemble_rri_itype(16403)));
-    words.set('ori', process_instruction('rro', assemble_rri_itype(24595)));
-    words.set('andi', process_instruction('rro', assemble_rri_itype(28691)));
+    words.set('addi',   process_instruction('rro', assemble_rri_itype(0x00000013)));
+    words.set('slti',   process_instruction('rro', assemble_rri_itype(0x00002013)));
+    words.set('sltiu',  process_instruction('rro', assemble_rri_itype(0x00003013)));
+    words.set('xori',   process_instruction('rro', assemble_rri_itype(0x00004013)));
+    words.set('ori',    process_instruction('rro', assemble_rri_itype(0x00006013)));
+    words.set('andi',   process_instruction('rro', assemble_rri_itype(0x00007013)));
 
-    words.set('slli', process_instruction('rro', assemble_rri_shift(4115)));
-    words.set('srli', process_instruction('rro', assemble_rri_shift(20499)));
-    words.set('srai', process_instruction('rro', assemble_rri_shift(1073762323)));
+    words.set('slli',   process_instruction('rro', assemble_rri_shift(0x00001013)));
+    words.set('srli',   process_instruction('rro', assemble_rri_shift(0x00005013)));
+    words.set('srai',   process_instruction('rro', assemble_rri_shift(0x40005013)));
 
-    words.set('add', process_instruction('rrr', assemble_rrr(51)));
-    words.set('sub', process_instruction('rrr', assemble_rrr(1073741875)));
-    words.set('sll', process_instruction('rrr', assemble_rrr(4147)));
-    words.set('slt', process_instruction('rrr', assemble_rrr(8243)));
-    words.set('sltu', process_instruction('rrr', assemble_rrr(12339)));
-    words.set('xor', process_instruction('rrr', assemble_rrr(16435)));
-    words.set('srl', process_instruction('rrr', assemble_rrr(20531)));
-    words.set('sra', process_instruction('rrr', assemble_rrr(1073762355)));
-    words.set('or', process_instruction('rrr', assemble_rrr(24627)));
-    words.set('and', process_instruction('rrr', assemble_rrr(28723)));
+    words.set('add',    process_instruction('rrr', assemble_rrr(0x00000033)));
+    words.set('sub',    process_instruction('rrr', assemble_rrr(0x40000033)));
+    words.set('sll',    process_instruction('rrr', assemble_rrr(0x00001033)));
+    words.set('slt',    process_instruction('rrr', assemble_rrr(0x00002033)));
+    words.set('sltu',   process_instruction('rrr', assemble_rrr(0x00003033)));
+    words.set('xor',    process_instruction('rrr', assemble_rrr(0x00004033)));
+    words.set('srl',    process_instruction('rrr', assemble_rrr(0x00005033)));
+    words.set('sra',    process_instruction('rrr', assemble_rrr(0x40005033)));
+    words.set('or',     process_instruction('rrr', assemble_rrr(0x00006033)));
+    words.set('and',    process_instruction('rrr', assemble_rrr(0x00007033)));
 
-    words.set('lb', process_instruction('rm', assemble_rm_itype(3)));
-    words.set('lh', process_instruction('rm', assemble_rm_itype(4099)));
-    words.set('lw', process_instruction('rm', assemble_rm_itype(8195)));
-    words.set('lbu', process_instruction('rm', assemble_rm_itype(16387)));
-    words.set('lhu', process_instruction('rm', assemble_rm_itype(20483)));
+    words.set('lb',     process_instruction('rm', assemble_rm_itype(0x00000003)));
+    words.set('lh',     process_instruction('rm', assemble_rm_itype(0x00001003)));
+    words.set('lw',     process_instruction('rm', assemble_rm_itype(0x00002003)));
+    words.set('lbu',    process_instruction('rm', assemble_rm_itype(0x00004003)));
+    words.set('lhu',    process_instruction('rm', assemble_rm_itype(0x00005003)));
 
-    words.set('sb', process_instruction('rm', assemble_rm_stype(35)));
-    words.set('sh', process_instruction('rm', assemble_rm_stype(4131)));
-    words.set('sw', process_instruction('rm', assemble_rm_stype(8227)));
+    words.set('sb',     process_instruction('rm', assemble_rm_stype(0x00000023)));
+    words.set('sh',     process_instruction('rm', assemble_rm_stype(0x00001023)));
+    words.set('sw',     process_instruction('rm', assemble_rm_stype(0x00002023)));
 
-    words.set('beq', process_instruction('rro', assemble_branch(99)));
-    words.set('bne', process_instruction('rro', assemble_branch(4195)));
-    words.set('blt', process_instruction('rro', assemble_branch(16483)));
-    words.set('bge', process_instruction('rro', assemble_branch(20579)));
-    words.set('bltu', process_instruction('rro', assemble_branch(24675)));
-    words.set('bgeu', process_instruction('rro', assemble_branch(28771)));
+    words.set('beq',    process_instruction('rro', assemble_branch(0x00000063)));
+    words.set('bne',    process_instruction('rro', assemble_branch(0x00001063)));
+    words.set('blt',    process_instruction('rro', assemble_branch(0x00004063)));
+    words.set('bge',    process_instruction('rro', assemble_branch(0x00005063)));
+    words.set('bltu',   process_instruction('rro', assemble_branch(0x00006063)));
+    words.set('bgeu',   process_instruction('rro', assemble_branch(0x00007063)));
 
     words.set('lui', process_instruction('ro', (parsed, { evaluate, view, offset }) => {
         const rd = parsed.data.values[0].register;
@@ -556,7 +574,7 @@ const WORDS = (() => {
             };
         }
 
-        const insn = 55
+        const insn = 0x00000037
             | (rd << 7)
             | (value >>> 0 << 12);
 
@@ -580,7 +598,7 @@ const WORDS = (() => {
             };
         }
 
-        const insn = 23
+        const insn = 0x00000017
             | (rd << 7)
             | (value >>> 0 << 12);
 
@@ -664,14 +682,14 @@ const WORDS = (() => {
                 }
             }
         },
-        assemble: assemble_rm_itype(103)
+        assemble: assemble_rm_itype(0x00000067)
     });
 
-    words.set('fence', process_instruction('', assemble_nullary(267386895)));
-    words.set('ecall', process_instruction('', assemble_nullary(115)));
-    words.set('ebreak', process_instruction('', assemble_nullary(1048691)));
+    words.set('fence', process_instruction('', assemble_nullary(0x0ff0000f)));
+    words.set('ecall', process_instruction('', assemble_nullary(0x00000073)));
+    words.set('ebreak', process_instruction('', assemble_nullary(0x00100073)));
 
-    words.set('ret', process_instruction('', assemble_nullary(32871)));
+    words.set('ret', process_instruction('', assemble_nullary(0x00008067)));
 
     words.set('j', process_instruction('o', (parsed, args) =>
         assemble_jal({
@@ -691,7 +709,7 @@ const WORDS = (() => {
     ));
 
     words.set('jr', process_instruction('r', (parsed, args) =>
-        assemble_rm_itype(103)({
+        assemble_rm_itype(0x00000067)({
             type: 'instruction',
             length: 4,
             data: {
@@ -729,7 +747,7 @@ export function assemble_riscv(text, origin) {
     let noted_misalign = false;
 
     for (const origLine of text.split('\n')) {
-        lineno++;
+        lineno ++;
         const line = origLine.trim();
         if (line === '') {
             continue;
@@ -739,7 +757,7 @@ export function assemble_riscv(text, origin) {
         const p = { i: 0, loc_counter };
 
         if (p.i + 2 <= tokens.length && tokens[p.i + 1] === ':') {
-            const l = tokens[p.i++]; // Consume label
+            const l = tokens[p.i ++]; // Consume label
             p.i++;
             if (/^\d+$/.test(l)) {
                 // local label
@@ -756,7 +774,7 @@ export function assemble_riscv(text, origin) {
 
         if (p.i < tokens.length && tokens[p.i] != '#') {
             // Not empty after optional label
-            if (!WORDS.has(tokens[p.i])) {
+            if (! WORDS.has(tokens[p.i])) {
                 errors.push({
                     type: 'error',
                     lineno,
@@ -764,12 +782,12 @@ export function assemble_riscv(text, origin) {
                 });
             } else {
                 const res = WORDS.get(tokens[p.i]);
-                p.i++;
+                p.i ++;
                 const parsed = res.parse(tokens, p);
                 if (parsed.type === 'error') {
-                    errors.push({ lineno, ...parsed });
+                    errors.push({ lineno, ... parsed });
                 } else {
-                    if (parsed.type === 'instruction' && !noted_misalign && (pc & 3)) {
+                    if (parsed.type === 'instruction' && ! noted_misalign && (pc & 0x3)) {
                         noted_misalign = true;
                         errors.push({
                             type: 'error',
@@ -853,24 +871,24 @@ export function assemble_riscv(text, origin) {
                 if (expr.special === '%hi') {
                     return {
                         type: 'ok',
-                        value: (value >>> 12) + ((value & 2048) != 0)
+                        value: (value >>> 12) + ((value & 0x800) != 0)
                     };
                 } else if (expr.special === '%lo') {
                     return {
                         type: 'ok',
-                        value: (value & 4095) << 20 >> 20
+                        value: (value & 0xfff) << 20 >> 20
                     };
                 } else if (expr.special === '%pcrel_hi') {
                     return {
                         type: 'ok',
-                        value: ((value - pc) >>> 12) + (((value - pc) & 2048) != 0)
+                        value: ((value - pc) >>> 12) + (((value - pc) & 0x800) != 0)
                     };
                 } else if (expr.special === '%pcrel_lo') {
                     const rel = get_pcrel_at(value);
                     if (rel !== null) {
                         return {
                             type: 'ok',
-                            value: (rel & 4095) << 20 >> 20
+                            value: (rel & 0xfff) << 20 >> 20
                         };
                     } else {
                         return {
@@ -886,7 +904,7 @@ export function assemble_riscv(text, origin) {
             view, offset: pc - origin, pc
         });
         if (res.type === 'error') {
-            errors.push({ lineno: chunk.lineno, ...res });
+            errors.push({ lineno: chunk.lineno, ... res });
         }
     }
 
