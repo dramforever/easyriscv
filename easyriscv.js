@@ -151,6 +151,20 @@ function convertEmulator(el) {
         updateUI();
     }
 
+    const CAUSES = new Map([
+        [ 0x00, "Instruction address misaligned" ],
+        [ 0x01, "Instruction access fault" ],
+        [ 0x02, "Illegal instruction" ],
+        [ 0x03, "Breakpoint" ],
+        [ 0x05, "Load access fault" ],
+        [ 0x07, "Store/AMO access fault" ],
+        [ 0x08, "Environment call from User mode" ],
+        [ 0x0b, "Environment call from Machine mode" ]
+    ]);
+
+    const fmtException = (res) =>
+        `[ Exception: ${CAUSES.get(res.cause) || "???"} (${res.cause}) | tval = ${fmt(res.tval)}, epc = ${fmt(res.epc)} ]\n`;
+
     function step() {
         const res = riscv.step();
         if (res.type === 'ok') {
@@ -159,7 +173,7 @@ function convertEmulator(el) {
             stop();
         } else {
             renderRegs();
-            writeOutput(`[ Exception cause ${res.cause}, tval = ${fmt(res.tval)}, at pc = ${fmt(riscv.pc)} ]\n`)
+            writeOutput(fmtException(res));
         }
     }
 
@@ -172,7 +186,7 @@ function convertEmulator(el) {
             const res = riscv.step();
             if (res.type === 'exception') {
                 renderRegs();
-                writeOutput(`[ Exception cause ${res.cause}, tval = ${fmt(res.tval)}, at pc = ${fmt(riscv.pc)} ]\n`)
+                writeOutput(fmtException(res));
                 pause();
                 break;
             } else if (res.type === 'stop') {

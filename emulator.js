@@ -162,7 +162,7 @@ export class RiscvState {
 
         return {
             type: 'exception',
-            cause, tval
+            cause, tval, epc: this.mepc
         };
     }
 
