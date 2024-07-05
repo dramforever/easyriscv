@@ -259,12 +259,11 @@ function convertEmulator(el) {
         if (event.key === 'Tab' && ! event.ctrlKey && ! event.altKey && ! event.altKey && ! event.shiftKey) {
             const text = edit.value;
 
-            const prev = text.lastIndexOf('\n', Math.max(0, edit.selectionStart - 1));
-            const start = prev === -1 ? 0 : prev;
+            const prev = text.lastIndexOf('\n', Math.max(0, edit.selectionStart - 1)) + 1;
 
             if (edit.selectionStart === edit.selectionEnd) {
                 const caret = edit.selectionStart;
-                const add = 4 - ((caret - prev - 1) % 4 + 4) % 4;
+                const add = 4 - (caret - prev) % 4;
                 const data = Array(add).fill(' ').join('');
                 document.execCommand('insertText', false, data);
             }
