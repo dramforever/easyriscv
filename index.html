@@ -2,97 +2,128 @@
     <title>Easy RISC-V</title>
 
     <script type="module" src="easyriscv.js"></script>
-
-    <style>
-        body {
-            margin: 3ex auto;
-            max-width: calc(min(800px, 90%));
-        }
-
-        .emulator-disabled {
-            white-space: pre-wrap;
-            font-family: monospace;
-        }
-
-        .emulator {
-            white-space: pre-wrap;
-            font-family: monospace;
-            display: grid;
-            gap: 1em;
-            grid-template-columns: 1fr 25em;
-            grid-template-rows: calc(17lh + 1em) 2.5em 10lh;
-        }
-
-        .emulator .emulator-edit {
-            grid-column: 1;
-            grid-row: 1;
-            min-height: 40ex;
-            padding: 0.4em;
-            resize: vertical;
-        }
-
-        .emulator .emulator-controls {
-            grid-column: 1 / 3;
-            grid-row: 2;
-            display: flex;
-            flex-direction: row;
-            justify-content: start;
-            gap: 0.5em;
-        }
-
-        .emulator .emulator-controls button {
-            padding: 0.5em 1em;
-        }
-
-        .emulator .emulator-controls .emulator-checkbox {
-            display: flex;
-            flex-direction: row;
-            justify-content: space-around;
-            align-items: center;
-            gap: 0.5em;
-        }
-
-        .emulator .emulator-controls .emulator-checkbox label {
-            flex-grow: 1;
-        }
-
-        .emulator .emulator-regs {
-            grid-column: 2;
-            grid-row: 1;
-            background-color: #ddd;
-            overflow-y: auto;
-            padding: 0.5em;
-        }
-
-        .emulator .emulator-output {
-            grid-column: 1 / 3;
-            grid-row: 3;
-            background-color: #ddd;
-            overflow-y: auto;
-            padding: 0.5em;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
+    <meta charset='utf-8'>
 </head>
 
 <body>
-    <div class="emulator-disabled">    # welcome to easyriscv emulator
-
-    la s1, msg
-
-1:  lbu a0, (s1)
-    beq a0, zero, 2f
-    jal putchar
-    addi s1, s1, 1
-    j 1b
-
-2:  ebreak
-
-putchar:
-    lui a1, 0x10000
-    sw a0, (a1)
-    ret
-
-msg: # Guess what this is
-    .byte 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77
-    .byte 0x6f, 0x72, 0x6c, 0x64, 0x21, 0x0a, 0x00
-</body>
+<h1 id="easy-risc-v">Easy RISC-V</h1>
+<p>An interactive introduction to RISC-V assembly programming, by <a
+href="https://github.com/dramforever">dramforever</a>.</p>
+<p>Interested in the code? Want to report an issue? Check out the GitHub
+page: <a href="https://github.com/dramforever/easyriscv"
+class="uri">https://github.com/dramforever/easyriscv</a></p>
+<h2 id="introduction"><a href="#introduction" class="anchor-link"
+aria-hidden="true">⋄</a>Introduction</h2>
+<p>Inspired by <a href="https://skilldrick.github.io/easy6502/">Easy
+6502 by Nick Morgan</a>, this is a quick-ish introduction to RISC-V
+assembly programming. This introduction is intended for those with a
+basic familiarity with low level computer science concepts, but
+unfamiliar with RISC-V. If you’re curious about RISC-V, I hope this will
+be a good start to your journey to learning about it.</p>
+<p>RISC-V, as its name suggests, is <a
+href="https://en.wikipedia.org/wiki/Reduced_instruction_set_computer">RISC
+(Reduced instruction set computer)</a> architecture. Having started its
+life at UC Berkerley, RISC-V has bred a lively community of students,
+researchers, engineers and hobbyists working on software and hardware.
+Some highlights of RISC-V include:</p>
+<ul>
+<li>Clean design: Although loosely based on many previous designs,
+RISC-V is at its core a new and clean design. It does away with integer
+status flags like “carry” or “overflow”, and does not have MIPS’s branch
+delay slots. RISC-V designed primarily as a target for compilers, but
+writing RISC-V assembly by hand is still quite pleasant.</li>
+<li>Open standard: RISC-V specifications are developed publicly and
+anyone can use them without copyright or patent licensing issues. Many
+researchers and companies around the world have made their own RISC-V
+processor cores and chips based on these specificaions.</li>
+<li>Community support: If you want to make your own processors, rather
+than paying a hefty license fee to Arm, or designing your own
+architecture, you can just use RISC-V. Using RISC-V instead of a custom
+architecture allows you to make use of the existing and growing software
+ecosystem instead of having to maintain your own.</li>
+</ul>
+<p>RISC-V is less mature than more established architectures like x86 or
+Arm, but it is already gaining steam real quick and has found great
+success in many areas of application, such as embedded systems, custom
+processors, education, and research.</p>
+<p>This article will cover the 32-bit bare bones RV32I instruction set
+with a tiny subset of the privileged architecture.</p>
+<p>By the end of this introduction, you will have learned these 45
+instructions:</p>
+<pre><code>lui auipc jal jalr
+beq bne blt bge bltu bgeu
+lb lh lw lbu lhu sb sh sw
+addi slti sltiu xori ori andi slli srli srai
+add sub sll slt sltu xor srl sra or and
+csrrw csrrs csrrc csrrwi csrrsi csrrci</code></pre>
+<p>You will also catch a glimpse of what creating an operating system on
+RISC-V is like, namely handling exceptions and privilege levels.</p>
+<p>Let’s get started.</p>
+<h2 id="my-first-risc-v-assembly-program"><a
+href="#my-first-risc-v-assembly-program" class="anchor-link"
+aria-hidden="true">⋄</a>My first RISC-V assembly program</h2>
+<p>Throughout this article you will see emulator panes like these:</p>
+<p>(If you just see a code block, there’s a JavaScript problem. Make
+sure you’ve enabled JavaScript, probably…)</p>
+<div class="emulator-disabled">
+start:
+    addi x10, x0, 0x123
+    ebreak
+</div>
+<p>You can use the buttons to control each emulator. Go ahead and click
+on ‘Start’. A register view should pop up showing the state of the
+emulator. Now click on ‘Run’. You’ll notice that:</p>
+<pre><code>a0 (x10) 0x00000000</code></pre>
+<p>Changed into:</p>
+<pre><code>a0 (x10) 0x00000123</code></pre>
+<p>And the emulator stopped. Congratulations, you’ve run your first
+RISC-V assembly program.</p>
+<h2 id="emulator-controls"><a href="#emulator-controls"
+class="anchor-link" aria-hidden="true">⋄</a>Emulator controls</h2>
+<p>The ‘Start’ button assembles your code and, well, starts the
+emulator. If there’s a problem with your code, it will tell you about it
+and the emulator will not start.</p>
+<p>When the emulator is started, you can see the current state of the
+registers in the side pane. More controls also becomes available. ‘Run’
+runs until the end or until you hit ‘Pause’. ‘Step’ runs a single
+step.</p>
+<p>If you hit ‘Step’, you’ll notice that the above program takes two
+steps to run. You may have guessed correctly that the first step
+corresponds to <code>addi</code>, and the second corresponds to
+<code>ebreak</code>. The top of the register panel shows
+<code>pc</code>, the current instruction address, and in parentheses the
+current instruction.</p>
+<p>The ‘Dump’ button opens a new window containing some text. There are
+two sections: the first is the symbol table, which tells you about the
+labels in your code:</p>
+<pre><code># Symbols
+# 0x40000000 start</code></pre>
+<p>The second section is an annotated version of your code:</p>
+<pre><code>start:
+{ 0x40000000: 12300513 } addi x10, x0, 0x123
+{ 0x40000004: 00100073 } ebreak</code></pre>
+<p>This tells you that the <code>addi</code> instruction encodes to hex
+<code>12300513</code>, and starts at address hex <code>40000000</code>.
+Similarly, <code>ebreak</code> encodes as <code>00100073</code> at
+address hex <code>40000004</code>.</p>
+<p>(Note: RISC-V instructions are <em>little-endian</em>, meaning that
+the four bytes of <code>addi</code> are actually
+<code>13 05 30 12</code>.)</p>
+<p>We’ll talk in detail about all of <code>pc</code>, registers,
+instructions, labels, and the two checkboxes later.</p>
+<p>Now you may have also guessed that <code>addi x10, x0, 0x123</code>
+means <code>x10 = x0 + 0x123</code>. As of <code>ebreak</code>, for now,
+just remember that <code>ebreak</code> stops the emulator.</p>
+<h2 id="processor-state"><a href="#processor-state" class="anchor-link"
+aria-hidden="true">⋄</a>Processor state</h2>
+<p>On RV32I, the architectural state comprises of</p>
+<ul>
+<li>31 general purpose registers, <code>x1</code> through
+<code>x31</code>, capable of holding any 32-bit data</li>
+<li>The program counter register <code>pc</code></li>
+</ul>
+<p><code>x0</code> is a special “zero register”. For computational
+instructions, you can use <code>x0</code> anywhere a register is
+expected. Reading it always gives zero, and writing to it just gets
+ignored.</p>
