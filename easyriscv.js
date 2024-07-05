@@ -40,7 +40,7 @@ let counter = 0;
  * @param {HTMLDivElement} el
  */
 function convertEmulator(el) {
-    const text = el.textContent;
+    const text = el.textContent.replace(/^\n/, '');
     for (const c of el.childNodes) {
         c.remove();
     }
@@ -63,7 +63,6 @@ function convertEmulator(el) {
 
     const output = document.createElement('div');
     output.classList.add('emulator-output');
-    output.append('Emulator output\n');
 
     el.append(edit, regsDisp, controls, output);
 
