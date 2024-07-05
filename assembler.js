@@ -1125,9 +1125,21 @@ export function assemble_riscv(text, origin) {
             errors
         };
     } else {
+        const lines = text.split('\n');
+        for (const [pc, chunk] of chunks) {
+            if (chunk.parsed.type === 'instruction') {
+                const insns = new Uint32Array(buf.slice(pc - origin, pc - origin + chunk.parsed.length));
+                const formatted = [... insns].map(x => x.toString(16).padStart(8, '0')).join(' ');
+                lines[chunk.lineno - 1] = `{ 0x${pc.toString(16).padStart(8, '0')}: ${formatted} } ${lines[chunk.lineno - 1].trimStart()}`;
+            }
+        }
+
+        const sym = [...label, ...loc].map(([name, addr]) => `# 0x${addr.toString(16).padStart(8, '0')} ${name}`);
+
         return {
             type: 'ok',
-            data: buf
+            data: buf,
+            dump: `# Symbols\n${sym.join('\n')}\n\n${lines.join('\n')}\n`
         };
     }
 }

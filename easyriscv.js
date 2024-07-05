@@ -73,6 +73,8 @@ function convertEmulator(el) {
     stepBtn.append('Step');
     const startStopBtn = document.createElement('button');
     startStopBtn.append('Start');
+    const dumpBtn = document.createElement('button');
+    dumpBtn.append('Dump');
     const clearBtn = document.createElement('button');
     clearBtn.append('Clear');
 
@@ -100,7 +102,7 @@ function convertEmulator(el) {
     counter ++;
     printOnExc.append(printOnExcCheck, printOnExcLabel)
 
-    controls.append(runBtn, stepBtn, startStopBtn, clearBtn, pauseOnExc, printOnExc);
+    controls.append(runBtn, stepBtn, startStopBtn, dumpBtn, clearBtn, pauseOnExc, printOnExc);
 
     let pauseOnException = false;
     let printOnException = false;
@@ -114,6 +116,7 @@ function convertEmulator(el) {
         runBtn.disabled = ! started;
         runBtn.textContent = running ? 'Pause' : 'Run';
         stepBtn.disabled = running || ! started;
+        dumpBtn.disabled = ! started;
         startStopBtn.textContent = started ? 'Stop' : 'Start';
         startStopBtn.disabled = running && started;
     }
@@ -122,7 +125,7 @@ function convertEmulator(el) {
     printOnExcCheck.onchange = updateUI;
     updateUI();
 
-    let mem = null, riscv = null, runTask = null;
+    let mem = null, riscv = null, dump = null, runTask = null;
 
     const fmt = (x) => `0x${x.toString(16).padStart(8, '0')}`;
 
@@ -131,20 +134,20 @@ function convertEmulator(el) {
         const names = "zero ra sp gp tp t0 t1 t2 s0 s1 a0 a1 a2 a3 a4 a5 a6 a7 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 t3 t4 t5 t6".split(' ');
 
         const insn = mem.fetch(riscv.pc);
-        lines.push(`  pc       ${fmt(riscv.pc)} (${insn === null ? '???' : fmt(insn)})\n`);
+        lines.push(`  pc       ${fmt(riscv.pc)} (insn: ${insn === null ? '???' : fmt(insn)})\n`);
         for (let i = 0; i < 32; i ++) {
-            const end = i % 2 ? '\n' : '  |  ';
-            lines.push(`${names[i].padStart(4, ' ')} ${`(x${i})`.padStart(5, ' ')} ${fmt(riscv.regs[i])} = ${(riscv.regs[i] | 0).toString().padStart(10, ' ')}${end}`);
+            const end = i % 2 ? '\n' : ' |';
+            lines.push(`${names[i].padStart(4, ' ')} ${`(x${i})`.padStart(5, ' ')} ${fmt(riscv.regs[i])}${end}`);
         }
         lines.push('\n');
         lines.push(`(priv) = ${riscv.priv} | mstatus = { MPP = ${riscv.mpp} }\n`);
         lines.push(`mscratch = ${fmt(riscv.mscratch)} | `);
         lines.push(`mtvec = ${fmt(riscv.mtvec)}\n`);
-        lines.push(`mcause = ${fmt(riscv.mepc)} | `);
         lines.push(`mepc = ${fmt(riscv.mepc)} | `);
         lines.push(`mtval = ${fmt(riscv.mtval)}\n`);
-        lines.push(`cycle = ${riscv.cycle[1].toString(16).padStart(8, '0')}_${riscv.cycle[0].toString(16).padStart(8, '0')} | `);
-        lines.push(`instret = ${riscv.instret[1].toString(16).padStart(8, '0')}_${riscv.instret[0].toString(16).padStart(8, '0')}\n`);
+        lines.push(`mcause = ${fmt(riscv.mepc)}\n`);
+        lines.push(`cycle = 0x${riscv.cycle[1].toString(16).padStart(8, '0')}_${riscv.cycle[0].toString(16).padStart(8, '0')}\n`);
+        lines.push(`instret = 0x${riscv.instret[1].toString(16).padStart(8, '0')}_${riscv.instret[0].toString(16).padStart(8, '0')}\n`);
         regsDisp.textContent = lines.join('');
     }
 
@@ -157,6 +160,7 @@ function convertEmulator(el) {
         const res = assemble_riscv(edit.value, 0x40000000);
 
         if (res.type === 'ok') {
+            dump = res.dump;
             const decoder = new TextDecoder();
             mem = new EmulatorMemory((byte) => {
                 const buf = new Uint8Array([byte]);
@@ -183,11 +187,18 @@ function convertEmulator(el) {
     function stop() {
         mem = null;
         riscv = null;
+        dump = null;
         running = false;
         started = false;
         writeOutput('[ Stopped ]\n')
         updateUI();
         edit.focus();
+    }
+
+    function viewDump() {
+        const blob = new Blob([dump], { type: 'text/plain' });
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl);
     }
 
     const CAUSES = new Map([
@@ -303,17 +314,12 @@ function convertEmulator(el) {
         }
     }
 
-    startStopBtn.onclick = () => {
-        if (started) {
-            stop();
-        } else {
-            start();
-        }
-    }
+    dumpBtn.onclick = viewDump;
 
     clearBtn.onclick = () => {
         output.textContent = '';
     }
+
 }
 
 const emulators = document.querySelectorAll('.emulator-disabled');
