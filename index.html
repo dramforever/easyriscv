@@ -55,7 +55,8 @@ instructions:</p>
 beq bne blt bge bltu bgeu
 lb lh lw lbu lhu sb sh sw
 addi slti sltiu xori ori andi slli srli srai
-add sub sll slt sltu xor srl sra or and
+add sub slt sltu xor or and sll srl sra
+ecall ebreak
 csrrw csrrs csrrc csrrwi csrrsi csrrci</code></pre>
 <p>You will also catch a glimpse of what creating an operating system on
 RISC-V is like, namely handling exceptions and privilege levels.</p>
@@ -117,13 +118,117 @@ means <code>x10 = x0 + 0x123</code>. As of <code>ebreak</code>, for now,
 just remember that <code>ebreak</code> stops the emulator.</p>
 <h2 id="processor-state"><a href="#processor-state" class="anchor-link"
 aria-hidden="true">⋄</a>Processor state</h2>
-<p>On RV32I, the architectural state comprises of</p>
+<p>Why don’t we start with the register view that shows the internal
+state of the processor.</p>
+<p>On the top of the register view is <code>pc</code>. The <span
+id="term-program-counter"><em>program counter</em></span>, or <span
+id="term-pc"><em><code>pc</code></em></span> is the address of the
+current instruction.</p>
+<p>(The instruction listed in parenthesis next to <code>pc</code> in the
+register view is provided as a courtesy and is not part of the processor
+state.)</p>
+<p>After that, 31 <span id="term-general-purpose-registers"><em>general
+purpose registers</em></span> registers are listed, numbered <span
+id="reg-x1-through-x31"><em><code>x1</code> through
+<code>x31</code></em></span>. These can contain any 32-bit data.</p>
+<p>If you’re wondering, there are no flags for RV32I.</p>
+<p>You may have noticed I’ve omitted one register. The register <span
+id="reg-x0"><em><code>x0</code></em></span> is a special “zero
+register”. For computational instructions, you can use <code>x0</code>
+anywhere a register is expected. Reading it always gives zero, and
+writing to it just gets ignored. The use of a special register
+simplifies the design of the architecture, and this use is shared by
+MIPS and Arm AArch64. We will make good use of <code>x0</code> soon.</p>
+<h2 id="instruction-syntax"><a href="#instruction-syntax"
+class="anchor-link" aria-hidden="true">⋄</a>Instruction syntax</h2>
+<p>But before we can start talking about instructions themselves, we
+need a way to talk about the syntax of assembly instructions so I can,
+you know, write it down for you.</p>
+<h2 id="computational-instructions"><a
+href="#computational-instructions" class="anchor-link"
+aria-hidden="true">⋄</a>Computational instructions</h2>
+<p>Using the registers as a playground of numbers, we can already
+perform computation on them.</p>
+<h3 id="arithmetic-instructions">Arithmetic instructions</h3>
+<h3 id="logical-instructions">Logical instructions</h3>
+<h3 id="comparison-instructions">Comparison instructions</h3>
+<h3 id="shift-instructions">Shift instructions</h3>
+<h3 id="summary">Summary</h3>
+<table>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 40%" />
+<col style="width: 30%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Instruction</th>
+<th>Operation</th>
+<th>Immediate range</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>add[i]</code></td>
+<td><code>a + b</code></td>
+<td><code>[-2048, 2047]</code></td>
+</tr>
+<tr class="even">
+<td><code>sub</code></td>
+<td><code>a - b</code></td>
+<td>(n/a)</td>
+</tr>
+<tr class="odd">
+<td><code>slt[i]</code></td>
+<td><code>(a &lt;<sub>s</sub> b) ? 1 : 0</code></td>
+<td><code>[-2048, 2047]</code></td>
+</tr>
+<tr class="even">
+<td><code>slt[i]u</code></td>
+<td><code>(a &lt;<sub>u</sub> b) ? 1 : 0</code></td>
+<td><code>[-2048, 2047]</code></td>
+</tr>
+<tr class="odd">
+<td><code>xor[i]</code></td>
+<td><code>a ^ b</code></td>
+<td><code>[-2048, 2047]</code></td>
+</tr>
+<tr class="even">
+<td><code>or[i]</code></td>
+<td><code>a | b</code></td>
+<td><code>[-2048, 2047]</code></td>
+</tr>
+<tr class="odd">
+<td><code>and[i]</code></td>
+<td><code>a &amp; b</code></td>
+<td><code>[-2048, 2047]</code></td>
+</tr>
+<tr class="even">
+<td><code>sll[i]</code></td>
+<td><code>a &lt;&lt; b</code></td>
+<td><code>[0, 31]</code></td>
+</tr>
+<tr class="odd">
+<td><code>srl[i]</code></td>
+<td><code>a &lt;&lt;<sub>u</sub> b</code></td>
+<td><code>[0, 31]</code></td>
+</tr>
+<tr class="even">
+<td><code>sra[i]</code></td>
+<td><code>a &lt;&lt;<sub>s</sub> b</code></td>
+<td><code>[0, 31]</code></td>
+</tr>
+</tbody>
+</table>
+<h1 id="index">Index</h1>
 <ul>
-<li>31 general purpose registers, <code>x1</code> through
-<code>x31</code>, capable of holding any 32-bit data</li>
-<li>The program counter register <code>pc</code></li>
+<li><a href="#term-general-purpose-registers">general purpose
+registers</a></li>
+<li><a href="#term-pc"><code>pc</code></a></li>
+<li><a href="#term-program-counter">program counter</a></li>
 </ul>
-<p><code>x0</code> is a special “zero register”. For computational
-instructions, you can use <code>x0</code> anywhere a register is
-expected. Reading it always gives zero, and writing to it just gets
-ignored.</p>
+<ul>
+<li><a href="#reg-x0"><code>x0</code></a></li>
+<li><a href="#reg-x1-through-x31"><code>x1</code> through
+<code>x31</code></a></li>
+</ul>

@@ -65,7 +65,8 @@ lui auipc jal jalr
 beq bne blt bge bltu bgeu
 lb lh lw lbu lhu sb sh sw
 addi slti sltiu xori ori andi slli srli srai
-add sub sll slt sltu xor srl sra or and
+add sub slt sltu xor or and sll srl sra
+ecall ebreak
 csrrw csrrs csrrc csrrwi csrrsi csrrci
 ```
 
@@ -153,12 +154,65 @@ Now you may have also guessed that `addi x10, x0, 0x123` means `x10 = x0 +
 
 ## Processor state
 
-On RV32I, the architectural state comprises of
+Why don't we start with the register view that shows the internal state of the
+processor.
 
-- 31 general purpose registers, `x1` through `x31`, capable of holding any
-  32-bit data
-- The program counter register `pc`
+On the top of the register view is `pc`. The [program counter]{x=term}, or
+[`pc`]{x=term} is the address of the current instruction.
 
-`x0` is a special "zero register". For computational instructions, you can use
-`x0` anywhere a register is expected. Reading it always gives zero, and writing
-to it just gets ignored.
+(The instruction listed in parenthesis next to `pc` in the register view is
+provided as a courtesy and is not part of the processor state.)
+
+After that, 31 [general purpose registers]{x=term} registers are listed,
+numbered [`x1` through `x31`]{x=reg}. These can contain any 32-bit data.
+
+If you're wondering, there are no flags for RV32I.
+
+You may have noticed I've omitted one register. The register [`x0`]{x=reg} is a
+special "zero register". For computational instructions, you can use `x0`
+anywhere a register is expected. Reading it always gives zero, and writing to it
+just gets ignored. The use of a special register simplifies the design of the
+architecture, and this use is shared by MIPS and Arm AArch64. We will make good
+use of `x0` soon.
+
+## Instruction syntax
+
+But before we can start talking about instructions themselves, we need a way to
+talk about the syntax of assembly instructions so I can, you know, write it down
+for you.
+
+## Computational instructions
+
+Using the registers as a playground of numbers, we can already perform
+computation on them.
+
+### Arithmetic instructions
+
+### Logical instructions
+
+### Comparison instructions
+
+### Shift instructions
+
+### Summary
+
+| Instruction | Operation | Immediate range |
+|---|----|---|
+| `add[i]` | `a + b` | `[-2048, 2047]` |
+| `sub` | `a - b` | (n/a) |
+| `slt[i]` | <code>(a &lt;<sub>s</sub> b) ? 1 : 0</code> | `[-2048, 2047]` |
+| `slt[i]u` | <code>(a &lt;<sub>u</sub> b) ? 1 : 0</code> | `[-2048, 2047]` |
+| `xor[i]` | `a ^ b` | `[-2048, 2047]` |
+| `or[i]` | `a | b` | `[-2048, 2047]` |
+| `and[i]` | `a & b` | `[-2048, 2047]` |
+| `sll[i]` | `a << b` | `[0, 31]` |
+| `srl[i]` | <code>a &lt;&lt;<sub>u</sub> b</code> | `[0, 31]` |
+| `sra[i]` | <code>a &lt;&lt;<sub>s</sub> b</code> | `[0, 31]` |
+
+# Index
+
+::: {index_of=term}
+:::
+
+::: {index_of=reg}
+:::
