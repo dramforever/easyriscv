@@ -261,28 +261,174 @@ subtractions:
 One thing you may have noticed is that the immediate value has a limited range,
 namely `[-2048, 2047]`, the range of a 12-bit two's complement signed integer.
 This is because RV32I uses fixed 32-bit i.e. 4-byte instructions, and only the
-top. You can see the hexadecimal value encoded in the instruction from the
-'Dump'.
+top 12 bits are available to encode an immediate value. You can see the
+hexadecimal value encoded in the instruction from the 'Dump'. This article will
+not go into much further detail about instruction encodings.
 
 ```
 { 0x40000000: 12300513 } addi x10, x0, 0x123
 { 0x40000004: 55500593 } addi x11, x0, 0x555
 ```
 
-All the arithmetic
-instructions in this section has this limitation.
+Even instructions as simple as addition and subtraction have other intersting
+uses. We have already used `addi x10, x0, 0x123` to put `0x123` in the register
+`x10`. When writing in assembly, we can use a little shortcut called
+[pseudoinstructions]{x=term}. The [`li`]{x=insn} ("load immediate")
+pseudoinstruction is a convenient way to put a small value in a register. It
+expands to `addi rd, x0, imm` when `imm` is in the range `[-2048, 2047]`.
 
-### Logical instructions
+```
+li rd, imm
+```
+
+When `imm` is `0`, `addi` copies the value without changing it because adding
+zero is the same as doing nothing. The [`mv`]{x=insn} ("move") pseudoinstruction
+copies the value from `rs1` to `rd`. It expands to `addi rd, rs1, 0`.
+
+```
+mv rd, rs1
+```
+
+Using the pseudoinstruction vs the "real" instruction are equivalent. You can
+see in the dump that the two are assembled exactly the same way.
+
+::: {.emulator-disabled}
+```{=html}
+    addi x10, x0, 0x123
+    li x10, 0x123
+
+    addi x11, x10, 0
+    mv x11, x10
+
+    ebreak
+```
+:::
+
+Subtracting from zero is negation. What's negative of `0x123`?
+
+
+::: {.emulator-disabled}
+```{=html}
+    addi x10, x0, 0x123
+    sub x11, x0, x10
+
+    ebreak
+```
+:::
+
+Hmm, we get `0xfffffccd`. That's the 32-bit [two's complement]{x=term}
+representation of `-291` or `-0x123`. There's plenty of tutorials on this out
+there, so we'll just note that whenever something is "signed", RISC-V uses two's
+complement representation. The benefit of this is that there's less instructions
+for separate signed and unsigned instructions --- both signed and unsigned
+numbers have the same overflow wrap-around behavior.
+
+Speaking of overflow wrap-around, what happens if we add something too much and
+it overflows? We'll use `add` to repeatedly double `0x123` and see what happens:
+
+::: {.emulator-disabled}
+```{=html}
+    addi x10, x0, 0x123
+    add x10, x10, x10
+    add x10, x10, x10
+    add x10, x10, x10
+    add x10, x10, x10
+    add x10, x10, x10
+    add x10, x10, x10
+    add x10, x10, x10
+    add x10, x10, x10
+    add x10, x10, x10
+    add x10, x10, x10
+    add x10, x10, x10
+    add x10, x10, x10
+    add x10, x10, x10
+    add x10, x10, x10
+    add x10, x10, x10
+    add x10, x10, x10
+    add x10, x10, x10
+    add x10, x10, x10
+    add x10, x10, x10
+    add x10, x10, x10
+    add x10, x10, x10
+    add x10, x10, x10
+    add x10, x10, x10
+    add x10, x10, x10
+
+    ebreak
+```
+:::
+
+As `0x123` crawls up to the upper bits and eventually we get to `0x9180_0000`,
+in the next iteration it turns into `0x2300_0000`. There was an overflow! Double
+of `0x9180_0000` is `0x1_2300_0000`, but that needs 33 bits in binary, so the
+highest bit can't be put in the result. Since RISC-V doesn't have flag bits for
+carry or overflow, it's simply gone. The programmer is expected to deal with
+this.
+
+### Bitwise instructions
+
+While we're talking about bits, another thing we can do about bits is doing
+bitwise logical operations on them.
+
+The [`and`]{x=insn} instruction performs a bitwise-"and" between the bits of
+`rs1` and `rs2` and puts the result in `rd`. The [`or`]{x=insn} and
+[`xor`]{x=insn} instructions similarly performs bitwise-"or" and bitwise-"xor".
+
+```
+and rd, rs1, rs2
+or rd, rs1, rs2
+xor rd, rs1, rs2
+```
+
+Immediate operand versions of the three, namely [`andi`]{x=insn},
+[`ori`]{x=insn}, [`xori`]{x=insn} also exist.
+
+```
+andi rd, rs1, imm
+ori rd, rs1, imm
+xori rd, rs1, imm
+```
+
+Here are some random bit operation examples you can play with:
+
+::: {.emulator-disabled}
+```{=html}
+    addi x10, x0, 0x5a1
+    xori x10, x10, 0xf0
+    xori x10, x10, -1
+
+    addi x11, x0, 0x5a1
+    addi x12, x11, -1
+    and x11, x11, x12
+    addi x12, x11, -1
+    and x11, x11, x12
+    addi x12, x11, -1
+    and x11, x11, x12
+
+    addi x13, x0, 0x5a1
+    ori x14, x13, 0xf
+    ori x14, x13, 0xff
+    ori x14, x13, 0xf0
+
+    ebreak
+```
+:::
+
+Remember that the immediate value is in the range `[-2048, 2047]`. For negative
+values, the two's complement representation used means that the high bits are
+all ones. For example, using `-1` as `imm` means the second operand is binary
+all ones, or `0xffff_ffff`. This allows us to use `xori rd, rs1, -1` as
+bitwise-"not".
 
 ### Comparison instructions
 
 ### Shift instructions
 
-### Summary
+### Summary of computational instructions
 
-(Operand `a` is `rs1`, and `b` is `rs2` or immediate. In instruction name `[i]`
-means an immediate variant is available. Subscript `u` means unsigned and `s`
-means two's complement signed.)
+(Operand `a` is `rs1`, and `b` is `rs2` or immediate. In the instruction name
+`[i]` means an immediate variant is available. Subscript `u` means unsigned and
+`s` means two's complement signed.)
 
 | Instruction | Operation | Immediate range |
 |---|----|---|
