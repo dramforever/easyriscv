@@ -28,16 +28,17 @@ good start to your journey to learning about it.
 
 [easy6502]: https://skilldrick.github.io/easy6502/
 
-RISC-V, as its name suggests, is [RISC (Reduced instruction set
-computer)][wp-risc] architecture. Having started its life at UC Berkerley,
-RISC-V has bred a lively community of students, researchers, engineers and
-hobbyists working on software and hardware. Some highlights of RISC-V include:
+RISC-V (pronounced "risk-five"), as its name suggests, is [RISC (Reduced
+instruction set computer)][wp-risc] architecture. Having started its life at UC
+Berkerley, RISC-V has bred a lively community of students, researchers,
+engineers and hobbyists working on software and hardware. Some highlights of
+RISC-V include:
 
 [wp-risc]: https://en.wikipedia.org/wiki/Reduced_instruction_set_computer
 
 - Clean design: Although loosely based on many previous designs, RISC-V is at
   its core a new and clean design. It does away with integer status flags like
-  "carry" or "overflow", and does not have MIPS's branch delay slots. RISC-V
+  "carry" or "overflow", and does not have MIPS's branch delay slots. RISC-V is
   designed primarily as a target for compilers, but writing RISC-V assembly by
   hand is still quite pleasant.
 - Open standard: RISC-V specifications are developed publicly and anyone can use
@@ -55,7 +56,7 @@ it is already gaining steam real quick and has found great success in many areas
 of application, such as embedded systems, custom processors, education, and
 research.
 
-This article will cover the 32-bit bare bones RV32I instruction set with a tiny
+This article will cover the 32-bit bare bones RV32I_Zicsr instruction set with a tiny
 subset of the privileged architecture.
 
 By the end of this introduction, you will have learned these 45 instructions:
@@ -109,9 +110,8 @@ program.
 
 ## Emulator controls
 
-The 'Start' button assembles your code and, well, starts the emulator. If
-there's a problem with your code, it will tell you about it and the emulator
-will not start.
+'Start' assembles your code and, well, starts the emulator. If there's a problem
+with your code, it will tell you about it and the emulator will not start.
 
 When the emulator is started, you can see the current state of the registers in
 the side pane. More controls also becomes available. 'Run' runs until the end or
@@ -122,7 +122,7 @@ You may have guessed correctly that the first step corresponds to `addi`, and
 the second corresponds to `ebreak`. The top of the register panel shows `pc`,
 the current instruction address, and in parentheses the current instruction.
 
-The 'Dump' button opens a new window containing some text. There are two
+'Dump' opens a new window containing some text. There are two
 sections: the first is the symbol table, which tells you about the labels in
 your code:
 
@@ -158,15 +158,14 @@ Why don't we start with the register view that shows the internal state of the
 processor.
 
 On the top of the register view is `pc`. The [program counter]{x=term}, or
-[`pc`]{x=term} is the address of the current instruction.
-
-(The instruction listed in parenthesis next to `pc` in the register view is
-provided as a courtesy and is not part of the processor state.)
+[`pc`]{x=term} is the address of the current instruction. (The instruction
+listed in parenthesis next to `pc` in the register view is provided as a
+courtesy and is not part of the processor state.)
 
 After that, 31 [general purpose registers]{x=term} registers are listed,
 numbered [`x1` through `x31`]{x=reg}. These can contain any 32-bit data.
 
-If you're wondering, there are no flags for RV32I.
+(If you're wondering, there are no flags for RV32I.)
 
 You may have noticed I've omitted one register. The register [`x0`]{x=reg} is a
 special "zero register". For computational instructions, you can use `x0`
@@ -178,15 +177,100 @@ use of `x0` soon.
 ## Instruction syntax
 
 But before we can start talking about instructions themselves, we need a way to
-talk about the syntax of assembly instructions so I can, you know, write it down
+talk about the [instruction syntax]{x=term} so I can, you know, write it down
 for you.
+
+The syntax of an instruction is the instruction name and then several
+comma-separated operands. For example, for this instruction we've seen above:
+
+```
+addi x10, x0, 0x123
+```
+
+`x10` is the [destination register]{x=term} or [`rd`]{x=term}. The next operand
+is the first (and only) [source register]{x=term} or [`rs1`]{x=term}. The last
+operand is an [immediate value]{x=term} or [`imm`]{x=term}. Using these
+abbreviations, we can summarize that the syntax for `addi` is:
+
+```
+addi rd, rs1, imm
+```
+
+Some other instructions have a second source register or [`rs2`]{x=term}. For
+example, the non-immediate `add` instruction has this syntax:
+
+```
+add rd, rs1, rs2
+```
+
+Some other instructions have no operands, like `ebreak`. Others have slightly
+more complex operands.
 
 ## Computational instructions
 
-Using the registers as a playground of numbers, we can already perform
-computation on them.
+Using the registers as a playground of numbers, we can use computational
+instructions to work with them.
 
 ### Arithmetic instructions
+
+As we've seen above, you can get a RISC-V machine to add numbers together.
+
+The [`addi`]{x=insn} instruction adds the value in `rs1` to the immediate value
+`imm`, and puts the result in `rd`.
+
+```
+addi rd, rs1, imm
+```
+
+The [`add`]{x=insn} instruction adds the value in `rs1` to the value in `rs2`, and
+puts the result in `rd`.
+
+```
+add rd, rs1, rs2
+```
+
+The [`sub`]{x=insn} instruction subtracts the value in `rs2` from the value in
+`rs1` (i.e. `rs1 - rs2`), and puts the result in `rd`. There's no corresponding
+`subi` instruction --- Just use `addi` with a negative number.
+
+```
+sub rd, rs1, rs2
+```
+
+Step through this demo program and try writing your own additions and
+subtractions:
+
+::: {.emulator-disabled}
+```{=html}
+    addi x10, x0, 0x123
+    addi x11, x0, 0x555
+
+    addi x12, x10, 0x765
+    add x13, x10, x11
+    sub x14, x11, x10
+
+    addi x10, x10, 1
+    addi x10, x10, 1
+    addi x10, x10, -1
+    addi x10, x10, -1
+
+    ebreak
+```
+:::
+
+One thing you may have noticed is that the immediate value has a limited range,
+namely `[-2048, 2047]`, the range of a 12-bit two's complement signed integer.
+This is because RV32I uses fixed 32-bit i.e. 4-byte instructions, and only the
+top. You can see the hexadecimal value encoded in the instruction from the
+'Dump'.
+
+```
+{ 0x40000000: 12300513 } addi x10, x0, 0x123
+{ 0x40000004: 55500593 } addi x11, x0, 0x555
+```
+
+All the arithmetic
+instructions in this section has this limitation.
 
 ### Logical instructions
 
@@ -195,6 +279,10 @@ computation on them.
 ### Shift instructions
 
 ### Summary
+
+(Operand `a` is `rs1`, and `b` is `rs2` or immediate. In instruction name `[i]`
+means an immediate variant is available. Subscript `u` means unsigned and `s`
+means two's complement signed.)
 
 | Instruction | Operation | Immediate range |
 |---|----|---|
@@ -215,4 +303,7 @@ computation on them.
 :::
 
 ::: {index_of=reg}
+:::
+
+::: {index_of=insn}
 :::

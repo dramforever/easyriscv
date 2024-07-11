@@ -21,7 +21,7 @@ assembly programming. This introduction is intended for those with a
 basic familiarity with low level computer science concepts, but
 unfamiliar with RISC-V. If you’re curious about RISC-V, I hope this will
 be a good start to your journey to learning about it.</p>
-<p>RISC-V, as its name suggests, is <a
+<p>RISC-V (pronounced “risk-five”), as its name suggests, is <a
 href="https://en.wikipedia.org/wiki/Reduced_instruction_set_computer">RISC
 (Reduced instruction set computer)</a> architecture. Having started its
 life at UC Berkerley, RISC-V has bred a lively community of students,
@@ -31,7 +31,7 @@ Some highlights of RISC-V include:</p>
 <li>Clean design: Although loosely based on many previous designs,
 RISC-V is at its core a new and clean design. It does away with integer
 status flags like “carry” or “overflow”, and does not have MIPS’s branch
-delay slots. RISC-V designed primarily as a target for compilers, but
+delay slots. RISC-V is designed primarily as a target for compilers, but
 writing RISC-V assembly by hand is still quite pleasant.</li>
 <li>Open standard: RISC-V specifications are developed publicly and
 anyone can use them without copyright or patent licensing issues. Many
@@ -47,8 +47,8 @@ ecosystem instead of having to maintain your own.</li>
 Arm, but it is already gaining steam real quick and has found great
 success in many areas of application, such as embedded systems, custom
 processors, education, and research.</p>
-<p>This article will cover the 32-bit bare bones RV32I instruction set
-with a tiny subset of the privileged architecture.</p>
+<p>This article will cover the 32-bit bare bones RV32I_Zicsr instruction
+set with a tiny subset of the privileged architecture.</p>
 <p>By the end of this introduction, you will have learned these 45
 instructions:</p>
 <pre><code>lui auipc jal jalr
@@ -82,9 +82,9 @@ emulator. Now click on ‘Run’. You’ll notice that:</p>
 RISC-V assembly program.</p>
 <h2 id="emulator-controls"><a href="#emulator-controls"
 class="anchor-link" aria-hidden="true">⋄</a>Emulator controls</h2>
-<p>The ‘Start’ button assembles your code and, well, starts the
-emulator. If there’s a problem with your code, it will tell you about it
-and the emulator will not start.</p>
+<p>‘Start’ assembles your code and, well, starts the emulator. If
+there’s a problem with your code, it will tell you about it and the
+emulator will not start.</p>
 <p>When the emulator is started, you can see the current state of the
 registers in the side pane. More controls also becomes available. ‘Run’
 runs until the end or until you hit ‘Pause’. ‘Step’ runs a single
@@ -95,8 +95,8 @@ corresponds to <code>addi</code>, and the second corresponds to
 <code>ebreak</code>. The top of the register panel shows
 <code>pc</code>, the current instruction address, and in parentheses the
 current instruction.</p>
-<p>The ‘Dump’ button opens a new window containing some text. There are
-two sections: the first is the symbol table, which tells you about the
+<p>‘Dump’ opens a new window containing some text. There are two
+sections: the first is the symbol table, which tells you about the
 labels in your code:</p>
 <pre><code># Symbols
 # 0x40000000 start</code></pre>
@@ -123,15 +123,14 @@ state of the processor.</p>
 <p>On the top of the register view is <code>pc</code>. The <span
 id="term-program-counter"><em>program counter</em></span>, or <span
 id="term-pc"><em><code>pc</code></em></span> is the address of the
-current instruction.</p>
-<p>(The instruction listed in parenthesis next to <code>pc</code> in the
-register view is provided as a courtesy and is not part of the processor
-state.)</p>
+current instruction. (The instruction listed in parenthesis next to
+<code>pc</code> in the register view is provided as a courtesy and is
+not part of the processor state.)</p>
 <p>After that, 31 <span id="term-general-purpose-registers"><em>general
 purpose registers</em></span> registers are listed, numbered <span
 id="reg-x1-through-x31"><em><code>x1</code> through
 <code>x31</code></em></span>. These can contain any 32-bit data.</p>
-<p>If you’re wondering, there are no flags for RV32I.</p>
+<p>(If you’re wondering, there are no flags for RV32I.)</p>
 <p>You may have noticed I’ve omitted one register. The register <span
 id="reg-x0"><em><code>x0</code></em></span> is a special “zero
 register”. For computational instructions, you can use <code>x0</code>
@@ -142,18 +141,86 @@ MIPS and Arm AArch64. We will make good use of <code>x0</code> soon.</p>
 <h2 id="instruction-syntax"><a href="#instruction-syntax"
 class="anchor-link" aria-hidden="true">⋄</a>Instruction syntax</h2>
 <p>But before we can start talking about instructions themselves, we
-need a way to talk about the syntax of assembly instructions so I can,
-you know, write it down for you.</p>
+need a way to talk about the <span
+id="term-instruction-syntax"><em>instruction syntax</em></span> so I
+can, you know, write it down for you.</p>
+<p>The syntax of an instruction is the instruction name and then several
+comma-separated operands. For example, for this instruction we’ve seen
+above:</p>
+<pre><code>addi x10, x0, 0x123</code></pre>
+<p><code>x10</code> is the <span
+id="term-destination-register"><em>destination register</em></span> or
+<span id="term-rd"><em><code>rd</code></em></span>. The next operand is
+the first (and only) <span id="term-source-register"><em>source
+register</em></span> or <span
+id="term-rs1"><em><code>rs1</code></em></span>. The last operand is an
+<span id="term-immediate-value"><em>immediate value</em></span> or <span
+id="term-imm"><em><code>imm</code></em></span>. Using these
+abbreviations, we can summarize that the syntax for <code>addi</code>
+is:</p>
+<pre><code>addi rd, rs1, imm</code></pre>
+<p>Some other instructions have a second source register or <span
+id="term-rs2"><em><code>rs2</code></em></span>. For example, the
+non-immediate <code>add</code> instruction has this syntax:</p>
+<pre><code>add rd, rs1, rs2</code></pre>
+<p>Some other instructions have no operands, like <code>ebreak</code>.
+Others have slightly more complex operands.</p>
 <h2 id="computational-instructions"><a
 href="#computational-instructions" class="anchor-link"
 aria-hidden="true">⋄</a>Computational instructions</h2>
-<p>Using the registers as a playground of numbers, we can already
-perform computation on them.</p>
+<p>Using the registers as a playground of numbers, we can use
+computational instructions to work with them.</p>
 <h3 id="arithmetic-instructions">Arithmetic instructions</h3>
+<p>As we’ve seen above, you can get a RISC-V machine to add numbers
+together.</p>
+<p>The <span id="insn-addi"><em><code>addi</code></em></span>
+instruction adds the value in <code>rs1</code> to the immediate value
+<code>imm</code>, and puts the result in <code>rd</code>.</p>
+<pre><code>addi rd, rs1, imm</code></pre>
+<p>The <span id="insn-add"><em><code>add</code></em></span> instruction
+adds the value in <code>rs1</code> to the value in <code>rs2</code>, and
+puts the result in <code>rd</code>.</p>
+<pre><code>add rd, rs1, rs2</code></pre>
+<p>The <span id="insn-sub"><em><code>sub</code></em></span> instruction
+subtracts the value in <code>rs2</code> from the value in
+<code>rs1</code> (i.e. <code>rs1 - rs2</code>), and puts the result in
+<code>rd</code>. There’s no corresponding <code>subi</code> instruction
+— Just use <code>addi</code> with a negative number.</p>
+<pre><code>sub rd, rs1, rs2</code></pre>
+<p>Step through this demo program and try writing your own additions and
+subtractions:</p>
+<div class="emulator-disabled">
+    addi x10, x0, 0x123
+    addi x11, x0, 0x555
+
+    addi x12, x10, 0x765
+    add x13, x10, x11
+    sub x14, x11, x10
+
+    addi x10, x10, 1
+    addi x10, x10, 1
+    addi x10, x10, -1
+    addi x10, x10, -1
+
+    ebreak
+</div>
+<p>One thing you may have noticed is that the immediate value has a
+limited range, namely <code>[-2048, 2047]</code>, the range of a 12-bit
+two’s complement signed integer. This is because RV32I uses fixed 32-bit
+i.e. 4-byte instructions, and only the top. You can see the hexadecimal
+value encoded in the instruction from the ‘Dump’.</p>
+<pre><code>{ 0x40000000: 12300513 } addi x10, x0, 0x123
+{ 0x40000004: 55500593 } addi x11, x0, 0x555</code></pre>
+<p>All the arithmetic instructions in this section has this
+limitation.</p>
 <h3 id="logical-instructions">Logical instructions</h3>
 <h3 id="comparison-instructions">Comparison instructions</h3>
 <h3 id="shift-instructions">Shift instructions</h3>
 <h3 id="summary">Summary</h3>
+<p>(Operand <code>a</code> is <code>rs1</code>, and <code>b</code> is
+<code>rs2</code> or immediate. In instruction name <code>[i]</code>
+means an immediate variant is available. Subscript <code>u</code> means
+unsigned and <code>s</code> means two’s complement signed.)</p>
 <table>
 <colgroup>
 <col style="width: 30%" />
@@ -222,13 +289,26 @@ perform computation on them.</p>
 </table>
 <h1 id="index">Index</h1>
 <ul>
+<li><a href="#term-destination-register">destination register</a></li>
 <li><a href="#term-general-purpose-registers">general purpose
 registers</a></li>
+<li><a href="#term-imm"><code>imm</code></a></li>
+<li><a href="#term-immediate-value">immediate value</a></li>
+<li><a href="#term-instruction-syntax">instruction syntax</a></li>
 <li><a href="#term-pc"><code>pc</code></a></li>
 <li><a href="#term-program-counter">program counter</a></li>
+<li><a href="#term-rd"><code>rd</code></a></li>
+<li><a href="#term-rs1"><code>rs1</code></a></li>
+<li><a href="#term-rs2"><code>rs2</code></a></li>
+<li><a href="#term-source-register">source register</a></li>
 </ul>
 <ul>
 <li><a href="#reg-x0"><code>x0</code></a></li>
 <li><a href="#reg-x1-through-x31"><code>x1</code> through
 <code>x31</code></a></li>
+</ul>
+<ul>
+<li><a href="#insn-add"><code>add</code></a></li>
+<li><a href="#insn-addi"><code>addi</code></a></li>
+<li><a href="#insn-sub"><code>sub</code></a></li>
 </ul>

@@ -2,10 +2,16 @@ body {
     margin: 3ex auto;
     max-width: calc(min(750px, 90%));
     line-height: 1.3;
+    padding-bottom: 15vh;
 }
 
 a {
     color: initial;
+}
+
+span:target {
+    text-decoration: underline dotted;
+    background-color: #eee;
 }
 
 pre {
