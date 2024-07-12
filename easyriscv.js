@@ -55,8 +55,13 @@ function convertEmulator(el) {
     edit.value = text;
     edit.classList.add('emulator-edit');
 
+    const regsDispWrapper = document.createElement('div');
+    regsDispWrapper.classList.add('emulator-regs-wrapper');
+
     const regsDisp = document.createElement('div');
     regsDisp.classList.add('emulator-regs');
+    regsDisp.append(Array(44).fill(' ').join(''));
+    regsDispWrapper.append(regsDisp)
 
     const controls = document.createElement('div');
     controls.classList.add('emulator-controls');
@@ -64,7 +69,7 @@ function convertEmulator(el) {
     const output = document.createElement('div');
     output.classList.add('emulator-output');
 
-    el.append(edit, regsDisp, controls, output);
+    el.append(edit, regsDispWrapper, controls, output);
 
     const runBtn = document.createElement('button');
     runBtn.append('Run');
