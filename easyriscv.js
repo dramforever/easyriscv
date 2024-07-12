@@ -216,12 +216,10 @@ function convertEmulator(el) {
 
     function step() {
         const res = riscv.step();
-        if (res.type === 'ok') {
-            renderRegs();
-        } else if (res.type === 'stop') {
+        renderRegs();
+        if (res.type === 'stop') {
             stop();
-        } else {
-            renderRegs();
+        } else if (res.type === 'exception') {
             if (printOnException) {
                 writeOutput(fmtException(res));
             }
