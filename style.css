@@ -100,3 +100,7 @@ pre {
     overflow-y: auto;
     padding: 0.5em;
 }
+
+.output-changed {
+    background-color: rgba(222, 153, 15, 0.5)
+}
