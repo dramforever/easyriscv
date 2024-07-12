@@ -48,9 +48,18 @@ Arm, but it is already gaining steam real quick and has found great
 success in many areas of application, such as embedded systems, custom
 processors, education, and research.</p>
 <p>This article will cover the 32-bit bare bones RV32I_Zicsr instruction
-set with a tiny subset of the privileged architecture.</p>
-<p>By the end of this introduction, you will have learned these 45
-instructions:</p>
+set with a tiny subset of the privileged architecture. You’ll probably
+never find a “real” chip with such bare bones instruction support. Most
+of them will have more <em>extensions</em> for other features like
+floating point or compressed instructions. However, I would still
+consider what we have here a “complete” instruction set. For example,
+Rust has <a
+href="https://doc.rust-lang.org/nightly/rustc/platform-support/riscv32-unknown-none-elf.html">Tier
+2 support</a> for the target <code>riscv32i-unknown-none-elf</code>
+which actually works completely fine with instructions we’ll cover
+here.</p>
+<p>Speaking of instructions we will cover, why don’t we meet the 45 of
+them right here and now:</p>
 <pre><code>lui auipc jal jalr
 beq bne blt bge bltu bgeu
 lb lh lw lbu lhu sb sh sw
@@ -58,8 +67,10 @@ addi slti sltiu xori ori andi slli srli srai
 add sub slt sltu xor or and sll srl sra
 ecall ebreak
 csrrw csrrs csrrc csrrwi csrrsi csrrci</code></pre>
-<p>You will also catch a glimpse of what creating an operating system on
-RISC-V is like, namely handling exceptions and privilege levels.</p>
+<p>These form the foundation of RISC-V, performing the basic tasks a
+processor would do. You will also catch a glimpse of what creating an
+operating system on RISC-V is like, namely handling exceptions and
+privilege levels.</p>
 <p>Let’s get started.</p>
 <h2 id="my-first-risc-v-assembly-program"><a
 href="#my-first-risc-v-assembly-program" class="anchor-link"
@@ -214,7 +225,7 @@ further detail about instruction encodings.</p>
 <pre><code>{ 0x40000000: 12300513 } addi x10, x0, 0x123
 { 0x40000004: 55500593 } addi x11, x0, 0x555</code></pre>
 <p>Even instructions as simple as addition and subtraction have other
-intersting uses. We have already used <code>addi x10, x0, 0x123</code>
+interesting uses. We have already used <code>addi x10, x0, 0x123</code>
 to put <code>0x123</code> in the register <code>x10</code>. When writing
 in assembly, we can use a little shortcut called <span
 id="term-pseudoinstructions"><em>pseudoinstructions</em></span>. The

@@ -42,3 +42,11 @@ function Div(el)
     return pandoc.BulletList(contents, { class = 'terms-list' })
   end
 end
+
+function CodeBlock(el)
+  if el.classes[1] == "emulator" then
+    return pandoc.Div(pandoc.RawInline('html', el.text), {
+      class = "emulator-disabled"
+    })
+  end
+end

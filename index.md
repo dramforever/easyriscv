@@ -56,10 +56,19 @@ it is already gaining steam real quick and has found great success in many areas
 of application, such as embedded systems, custom processors, education, and
 research.
 
-This article will cover the 32-bit bare bones RV32I_Zicsr instruction set with a tiny
-subset of the privileged architecture.
+This article will cover the 32-bit bare bones RV32I_Zicsr instruction set with a
+tiny subset of the privileged architecture. You'll probably never find a "real"
+chip with such bare bones instruction support. Most of them will have more
+*extensions* for other features like floating point or compressed instructions.
+However, I would still consider what we have here a "complete" instruction set.
+For example, Rust has [Tier 2 support][rust-riscv32-none] for the target
+`riscv32i-unknown-none-elf` which actually works completely fine with
+instructions we'll cover here.
 
-By the end of this introduction, you will have learned these 45 instructions:
+[rust-riscv32-none]: https://doc.rust-lang.org/nightly/rustc/platform-support/riscv32-unknown-none-elf.html
+
+Speaking of instructions we will cover, why don't we meet the 45 of them right
+here and now:
 
 ```
 lui auipc jal jalr
@@ -71,8 +80,9 @@ ecall ebreak
 csrrw csrrs csrrc csrrwi csrrsi csrrci
 ```
 
-You will also catch a glimpse of what creating an operating system on RISC-V is
-like, namely handling exceptions and privilege levels.
+These form the foundation of RISC-V, performing the basic tasks a processor
+would do. You will also catch a glimpse of what creating an operating system on
+RISC-V is like, namely handling exceptions and privilege levels.
 
 Let's get started.
 
@@ -83,13 +93,11 @@ Throughout this article you will see emulator panes like these:
 (If you just see a code block, there's a JavaScript problem. Make sure
 you've enabled JavaScript, probably...)
 
-::: {.emulator-disabled}
-```{=html}
+```emulator
 start:
     addi x10, x0, 0x123
     ebreak
 ```
-:::
 
 You can use the buttons to control each emulator. Go ahead and click on 'Start'.
 A register view should pop up showing the state of the emulator. Now click on
@@ -240,8 +248,7 @@ sub rd, rs1, rs2
 Step through this demo program and try writing your own additions and
 subtractions:
 
-::: {.emulator-disabled}
-```{=html}
+```emulator
     addi x10, x0, 0x123
     addi x11, x0, 0x555
 
@@ -256,7 +263,6 @@ subtractions:
 
     ebreak
 ```
-:::
 
 One thing you may have noticed is that the immediate value has a limited range,
 namely `[-2048, 2047]`, the range of a 12-bit two's complement signed integer.
@@ -270,7 +276,7 @@ not go into much further detail about instruction encodings.
 { 0x40000004: 55500593 } addi x11, x0, 0x555
 ```
 
-Even instructions as simple as addition and subtraction have other intersting
+Even instructions as simple as addition and subtraction have other interesting
 uses. We have already used `addi x10, x0, 0x123` to put `0x123` in the register
 `x10`. When writing in assembly, we can use a little shortcut called
 [pseudoinstructions]{x=term}. The [`li`]{x=insn} ("load immediate")
@@ -292,8 +298,7 @@ mv rd, rs1
 Using the pseudoinstruction vs the "real" instruction are equivalent. You can
 see in the dump that the two are assembled exactly the same way.
 
-::: {.emulator-disabled}
-```{=html}
+```emulator
     addi x10, x0, 0x123
     li x10, 0x123
 
@@ -302,19 +307,16 @@ see in the dump that the two are assembled exactly the same way.
 
     ebreak
 ```
-:::
 
 Subtracting from zero is negation. What's negative of `0x123`?
 
 
-::: {.emulator-disabled}
-```{=html}
+```emulator
     addi x10, x0, 0x123
     sub x11, x0, x10
 
     ebreak
 ```
-:::
 
 Hmm, we get `0xfffffccd`. That's the 32-bit [two's complement]{x=term}
 representation of `-291` or `-0x123`. There's plenty of tutorials on this out
@@ -326,8 +328,7 @@ numbers have the same overflow wrap-around behavior.
 Speaking of overflow wrap-around, what happens if we add something too much and
 it overflows? We'll use `add` to repeatedly double `0x123` and see what happens:
 
-::: {.emulator-disabled}
-```{=html}
+```emulator
     addi x10, x0, 0x123
     add x10, x10, x10
     add x10, x10, x10
@@ -356,7 +357,6 @@ it overflows? We'll use `add` to repeatedly double `0x123` and see what happens:
 
     ebreak
 ```
-:::
 
 As `0x123` crawls up to the upper bits and eventually we get to `0x9180_0000`,
 in the next iteration it turns into `0x2300_0000`. There was an overflow! Double
@@ -391,8 +391,7 @@ xori rd, rs1, imm
 
 Here are some random bit operation examples you can play with:
 
-::: {.emulator-disabled}
-```{=html}
+```emulator
     addi x10, x0, 0x5a1
     xori x10, x10, 0xf0
     xori x10, x10, -1
@@ -412,7 +411,6 @@ Here are some random bit operation examples you can play with:
 
     ebreak
 ```
-:::
 
 Remember that the immediate value is in the range `[-2048, 2047]`. For negative
 values, the two's complement representation used means that the high bits are
