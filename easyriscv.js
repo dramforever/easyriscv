@@ -141,7 +141,7 @@ function convertEmulator(el) {
 
         const insn = mem.fetch(riscv.pc);
         lines.push(`  pc       ${fmt(riscv.pc)} (insn: ${insn === null ? '???' : fmt(insn)})\n`);
-        for (let i = 0; i < 32; i++) {
+        for (let i = 0; i < 32; i ++) {
             const end = i % 2 ? '\n' : ' |';
             lines.push(`${names[i].padStart(4, ' ')} ${`(x${i})`.padStart(5, ' ')} ${fmt(riscv.regs[i])}${end}`);
         }
