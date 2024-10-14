@@ -149,7 +149,7 @@ function convertEmulator(el) {
         lines.push(`mtvec = ${fmt(riscv.mtvec)}\n`);
         lines.push(`mepc = ${fmt(riscv.mepc)} | `);
         lines.push(`mtval = ${fmt(riscv.mtval)}\n`);
-        lines.push(`mcause = ${fmt(riscv.mepc)}\n`);
+        lines.push(`mcause = ${fmt(riscv.mcause)}\n`);
         lines.push(`cycle = 0x${riscv.cycle[1].toString(16).padStart(8, '0')}_${riscv.cycle[0].toString(16).padStart(8, '0')}\n`);
         lines.push(`instret = 0x${riscv.instret[1].toString(16).padStart(8, '0')}_${riscv.instret[0].toString(16).padStart(8, '0')}\n`);
         regsDisp.textContent = lines.join('');
