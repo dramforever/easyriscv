@@ -206,7 +206,7 @@ export class RiscvState {
             }
         } else if ((insn & 0b1111111) === 0b1100111) {
             if (((insn >>> 12) & 0b111) === 0b000) { // jalr
-                const jump_dest = (this.regs[(insn >>> 15) & 0b11111] + (insn >> 20)) >>> 0;
+                const jump_dest = ((this.regs[(insn >>> 15) & 0b11111] + (insn >> 20)) & ~1) >>> 0;
 
                 if (jump_dest & 0b11) {
                     return this.exception(CAUSE_CODE.misaligned_fetch, 0);
