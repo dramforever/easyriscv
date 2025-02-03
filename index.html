@@ -56,8 +56,8 @@ consider what we have here a “complete” instruction set. For example,
 Rust has <a
 href="https://doc.rust-lang.org/nightly/rustc/platform-support/riscv32-unknown-none-elf.html">Tier
 2 support</a> for the target <code>riscv32i-unknown-none-elf</code>
-which actually works completely fine with instructions we’ll cover
-here.</p>
+which actually works completely fine with only the instructions we’ll
+cover here.</p>
 <p>Speaking of instructions we will cover, why don’t we meet the 45 of
 them right here and now:</p>
 <pre><code>lui auipc jal jalr
@@ -67,10 +67,13 @@ addi slti sltiu xori ori andi slli srli srai
 add sub slt sltu xor or and sll srl sra
 ecall ebreak
 csrrw csrrs csrrc csrrwi csrrsi csrrci</code></pre>
-<p>These form the foundation of RISC-V, performing the basic tasks a
-processor would do. You will also catch a glimpse of what creating an
-operating system on RISC-V is like, namely handling exceptions and
-privilege levels.</p>
+<p>Some of these instruction names should ring a bell (<code>add</code>,
+<code>or</code>, <code>xor</code>). Others will look like they have some
+pattern to it. A few weird ones like <code>auipc</code> stand out. These
+instructions form the foundation of RISC-V, performing the basic tasks a
+processor would do.</p>
+<p>You will also catch a glimpse of what creating an operating system on
+RISC-V is like, namely handling exceptions and privilege levels.</p>
 <p>Let’s get started.</p>
 <h2 id="my-first-risc-v-assembly-program"><a
 href="#my-first-risc-v-assembly-program" class="anchor-link"
@@ -129,6 +132,7 @@ means <code>x10 = x0 + 0x123</code>. As of <code>ebreak</code>, for now,
 just remember that <code>ebreak</code> stops the emulator.</p>
 <h2 id="processor-state"><a href="#processor-state" class="anchor-link"
 aria-hidden="true">⋄</a>Processor state</h2>
+<!-- TODO: Rewrite this section so it doesn't look like it's about the emulator -->
 <p>Why don’t we start with the register view that shows the internal
 state of the processor.</p>
 <p>On the top of the register view is <code>pc</code>. The <span
@@ -138,7 +142,7 @@ current instruction. (The instruction listed in parenthesis next to
 <code>pc</code> in the register view is provided as a courtesy and is
 not part of the processor state.)</p>
 <p>After that, 31 <span id="term-general-purpose-registers"><em>general
-purpose registers</em></span> registers are listed, numbered <span
+purpose registers</em></span> are listed, numbered <span
 id="reg-x1-through-x31"><em><code>x1</code> through
 <code>x31</code></em></span>. These can contain any 32-bit data.</p>
 <p>(If you’re wondering, there are no flags for RV32I.)</p>
@@ -192,11 +196,12 @@ instruction adds the value in <code>rs1</code> to the immediate value
 adds the value in <code>rs1</code> to the value in <code>rs2</code>, and
 puts the result in <code>rd</code>.</p>
 <pre><code>add rd, rs1, rs2</code></pre>
-<p>The <span id="insn-sub"><em><code>sub</code></em></span> instruction
-subtracts the value in <code>rs2</code> from the value in
-<code>rs1</code> (i.e. <code>rs1 - rs2</code>), and puts the result in
-<code>rd</code>. There’s no corresponding <code>subi</code> instruction
-— Just use <code>addi</code> with a negative number.</p>
+<p>The opposite of addition is subtraction. The <span
+id="insn-sub"><em><code>sub</code></em></span> instruction subtracts the
+value in <code>rs2</code> from the value in <code>rs1</code>
+(i.e. <code>rs1 - rs2</code>), and puts the result in <code>rd</code>.
+There’s no corresponding <code>subi</code> instruction — Just use
+<code>addi</code> with a negative number.</p>
 <pre><code>sub rd, rs1, rs2</code></pre>
 <p>Step through this demo program and try writing your own additions and
 subtractions:</p>
@@ -215,9 +220,9 @@ subtractions:</p>
 
     ebreak
 </div>
-<p>One thing you may have noticed is that the immediate value has a
-limited range, namely <code>[-2048, 2047]</code>, the range of a 12-bit
-two’s complement signed integer. This is because RV32I uses fixed 32-bit
+<p>One thing you should note is that the immediate value has a limited
+range, namely <code>[-2048, 2047]</code>, the range of a 12-bit two’s
+complement signed integer. This is because RV32I uses fixed 32-bit
 i.e. 4-byte instructions, and only the top 12 bits are available to
 encode an immediate value. You can see the hexadecimal value encoded in
 the instruction from the ‘Dump’. This article will not go into much
@@ -255,7 +260,7 @@ way.</p>
 <p>Subtracting from zero is negation. What’s negative of
 <code>0x123</code>?</p>
 <div class="emulator-disabled">
-    addi x10, x0, 0x123
+    li x10, 0x123
     sub x11, x0, x10
 
     ebreak
@@ -272,7 +277,7 @@ same overflow wrap-around behavior.</p>
 too much and it overflows? We’ll use <code>add</code> to repeatedly
 double <code>0x123</code> and see what happens:</p>
 <div class="emulator-disabled">
-    addi x10, x0, 0x123
+    li x10, 0x123
     add x10, x10, x10
     add x10, x10, x10
     add x10, x10, x10
@@ -315,7 +320,7 @@ performs a bitwise-“and” between the bits of <code>rs1</code> and
 <code>rs2</code> and puts the result in <code>rd</code>. The <span
 id="insn-or"><em><code>or</code></em></span> and <span
 id="insn-xor"><em><code>xor</code></em></span> instructions similarly
-performs bitwise-“or” and bitwise-“xor”.</p>
+performs bitwise-“or” and bitwise-“xor”, respectively.</p>
 <pre><code>and rd, rs1, rs2
 or rd, rs1, rs2
 xor rd, rs1, rs2</code></pre>
@@ -328,11 +333,11 @@ ori rd, rs1, imm
 xori rd, rs1, imm</code></pre>
 <p>Here are some random bit operation examples you can play with:</p>
 <div class="emulator-disabled">
-    addi x10, x0, 0x5a1
+    li x10, 0x5a1
     xori x10, x10, 0xf0
     xori x10, x10, -1
 
-    addi x11, x0, 0x5a1
+    li x11, 0x5a1
     addi x12, x11, -1
     and x11, x11, x12
     addi x12, x11, -1
@@ -340,7 +345,7 @@ xori rd, rs1, imm</code></pre>
     addi x12, x11, -1
     and x11, x11, x12
 
-    addi x13, x0, 0x5a1
+    li x13, 0x5a1
     ori x14, x13, 0xf
     ori x14, x13, 0xff
     ori x14, x13, 0xf0
@@ -353,7 +358,108 @@ representation used means that the high bits are all ones. For example,
 using <code>-1</code> as <code>imm</code> means the second operand is
 binary all ones, or <code>0xffff_ffff</code>. This allows us to use
 <code>xori rd, rs1, -1</code> as bitwise-“not”.</p>
+<div class="emulator-disabled">
+    li x10, 0x5a1
+    xori x11, x10, -1
+
+    or x12, x10, x11
+    add x13, x10, x11
+
+    ebreak
+</div>
+<p>Another interesting operation you can do is to round/<span
+id="term-align"><em>align</em></span> something up or down to a multiple
+of a power of two. For example, if you want to find the closest multiple
+of 16 below <code>a</code>, in binary that would be clearing the lowest
+4 bits, or <code>a &amp; ~0b1111</code>. Conveniently, that’s
+<code>a &amp; -16</code> in two’s complement.</p>
+<p>Aligning up is less intuitive, but one idea would be adding 16 first.
+However that gives an incorrect result for powers of 16. It’s easy
+enough to fix though: adding one less works exactly right:
+<code>(a + 15) &amp; -16</code></p>
+<div class="emulator-disabled">
+    li x10, 0x123
+    andi x11, x10, -16
+
+    addi x12, x10, 15
+    andi x12, x12, -16
+    ebreak
+</div>
 <h3 id="comparison-instructions">Comparison instructions</h3>
+<p>Usually when you write a comparison of some sort like
+<code>a == b</code> or <code>a &gt;= b</code>, it’s used as a condition
+for some <code>if</code> or loop, but… those things are complicated!
+We’re getting to it later.</p>
+<p>Sometimes you just want a boolean value out of a comparison. The C
+convention uses 1 for true and 0 for false, and since the world runs on
+C now, that’s what RISC-V provides.</p>
+<p>In C there are six comparison operators:</p>
+<pre><code>== != &lt; &gt; &lt;= &gt;=</code></pre>
+<p>The values being compared can also be both signed or both
+unsigned.</p>
+<p>How many comparison instructions do we have at our disposal? Let’s
+see…</p>
+<pre><code>slt rd, rs1, rs2
+sltu rd, rs1, rs2
+slti rd, rs1, imm
+sltiu rd, rs1, imm</code></pre>
+<p>The <span id="insn-slt"><em><code>slt</code></em></span> instruction
+compares <code>rs1</code> and <code>rs2</code> as signed 32-bit
+integers, and sets <code>rd</code> to <code>1</code> if
+<code>rs1 &lt; rs2</code>, and <code>0</code> otherwise
+(<code>rs1 &gt;= rs2</code>). The <span
+id="insn-sltu"><em><code>sltu</code></em></span> instruction is similar
+but it treats the operands as unsigned values. <span
+id="insn-slti"><em><code>slti</code></em></span> and <span
+id="insn-sltiu"><em><code>sltiu</code></em></span> are similar but the
+second operand is an immediate value.</p>
+<p>(Of particular note is <code>sltiu</code>, where the immediate
+operand still has the range <code>[-2048, 2047]</code> but is sign
+extended to 32 bits and then treated as an unsigned value, like what
+would happen in C with <code>a &lt; (unsigned)-1</code>.)</p>
+<p>That’s… one of the six comparisons settled. What about the others? As
+it turns out, we can synthesize any of the other five, using up to two
+instructions.</p>
+<p>Making <code>&gt;</code> from <code>&lt;</code> is easy, as you can
+just swap the operands. Using <code>xori</code> with <code>1</code> we
+can invert the result of a comparison, giving as <code>&lt;=</code> and
+<code>&gt;=</code>.</p>
+<pre><code>    li x10, 0x3
+    li x11, 0x5
+
+    slt x12, x10, x11   # x10 &lt; x11
+    slt x13, x11, x10   # x10 &gt; x11
+
+    xori x14, x12, 1    # x10 &gt;= x11  i.e.  !(x10 &lt; x11)
+    xori x15, x13, 1    # x10 &lt;= x11  i.e.  !(x10 &gt; x11)</code></pre>
+<p>That was signed comparison but unsigned comparison works the same
+using <code>sltu</code> instead of <code>slt</code>.</p>
+<p>As for <code>==</code> and <code>!=</code>, let’s tackle the easier
+case of <code>a == 0</code> and <code>a != 0</code> first. We will use
+the fact that for unsigned values, <code>a != 0</code> is equivalent to
+<code>a &gt; 0</code>. The negation of that is <code>a &lt;= 0</code>,
+which is the same as <code>a &lt; 1</code>.</p>
+<pre><code>    li x10, 0
+
+    sltu x11, x0, x10    # 0 &lt;u x10  i.e.  x10 != 0
+    sltiu x12, x10, 1    # x10 &lt;u 1  i.e.  x10 == 0</code></pre>
+<p>As a bonus, this is also how we get logical not and casting to
+<code>bool</code>.</p>
+<p>Now that we have these, <code>a == b</code> is just
+<code>(a - b) == 0</code>, and <code>a != b</code> is just
+<code>(a - b) != 0</code>.</p>
+<p>In summary: (<code>[u]</code> means use <code>u</code> for unsigned
+comparison and nothing for signed comparison)</p>
+<ul>
+<li><code>a &lt; b</code>: <code>slt[u]</code></li>
+<li><code>a &gt; b</code>: <code>slt[u] reversed</code></li>
+<li><code>a &lt;= b</code>: <code>slt[u] reversed ; xori 1</code></li>
+<li><code>a &gt;= b</code>: <code>slt[u] ; xori 1</code></li>
+<li><code>a == 0</code>: <code>sltu x0</code></li>
+<li><code>a != 0</code>: <code>sltiu 1</code></li>
+<li><code>a == b</code>: <code>sub ; sltu x0</code></li>
+<li><code>a != b</code>: <code>sub ; sltiu 1</code></li>
+</ul>
 <h3 id="shift-instructions">Shift instructions</h3>
 <h3 id="summary-of-computational-instructions">Summary of computational
 instructions</h3>
@@ -417,18 +523,19 @@ unsigned and <code>s</code> means two’s complement signed.)</p>
 </tr>
 <tr class="odd">
 <td><code>srl[i]</code></td>
-<td><code>a &lt;&lt;<sub>u</sub> b</code></td>
+<td><code>a &gt;&gt;<sub>u</sub> b</code></td>
 <td><code>[0, 31]</code></td>
 </tr>
 <tr class="even">
 <td><code>sra[i]</code></td>
-<td><code>a &lt;&lt;<sub>s</sub> b</code></td>
+<td><code>a &gt;&gt;<sub>s</sub> b</code></td>
 <td><code>[0, 31]</code></td>
 </tr>
 </tbody>
 </table>
 <h1 id="index">Index</h1>
 <ul>
+<li><a href="#term-align">align</a></li>
 <li><a href="#term-destination-register">destination register</a></li>
 <li><a href="#term-general-purpose-registers">general purpose
 registers</a></li>
@@ -458,6 +565,10 @@ registers</a></li>
 <li><a href="#insn-mv"><code>mv</code></a></li>
 <li><a href="#insn-or"><code>or</code></a></li>
 <li><a href="#insn-ori"><code>ori</code></a></li>
+<li><a href="#insn-slt"><code>slt</code></a></li>
+<li><a href="#insn-slti"><code>slti</code></a></li>
+<li><a href="#insn-sltiu"><code>sltiu</code></a></li>
+<li><a href="#insn-sltu"><code>sltu</code></a></li>
 <li><a href="#insn-sub"><code>sub</code></a></li>
 <li><a href="#insn-xor"><code>xor</code></a></li>
 <li><a href="#insn-xori"><code>xori</code></a></li>

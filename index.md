@@ -63,7 +63,7 @@ chip with such bare bones instruction support. Most of them will have more
 However, I would still consider what we have here a "complete" instruction set.
 For example, Rust has [Tier 2 support][rust-riscv32-none] for the target
 `riscv32i-unknown-none-elf` which actually works completely fine with
-instructions we'll cover here.
+only the instructions we'll cover here.
 
 [rust-riscv32-none]: https://doc.rust-lang.org/nightly/rustc/platform-support/riscv32-unknown-none-elf.html
 
@@ -80,9 +80,13 @@ ecall ebreak
 csrrw csrrs csrrc csrrwi csrrsi csrrci
 ```
 
-These form the foundation of RISC-V, performing the basic tasks a processor
-would do. You will also catch a glimpse of what creating an operating system on
-RISC-V is like, namely handling exceptions and privilege levels.
+Some of these instruction names should ring a bell (`add`, `or`, `xor`). Others
+will look like they have some pattern to it. A few weird ones like `auipc` stand
+out. These instructions form the foundation of RISC-V, performing the basic
+tasks a processor would do.
+
+You will also catch a glimpse of what creating an operating system on RISC-V is
+like, namely handling exceptions and privilege levels.
 
 Let's get started.
 
@@ -162,6 +166,8 @@ Now you may have also guessed that `addi x10, x0, 0x123` means `x10 = x0 +
 
 ## Processor state
 
+<!-- TODO: Rewrite this section so it doesn't look like it's about the emulator -->
+
 Why don't we start with the register view that shows the internal state of the
 processor.
 
@@ -170,8 +176,8 @@ On the top of the register view is `pc`. The [program counter]{x=term}, or
 listed in parenthesis next to `pc` in the register view is provided as a
 courtesy and is not part of the processor state.)
 
-After that, 31 [general purpose registers]{x=term} registers are listed,
-numbered [`x1` through `x31`]{x=reg}. These can contain any 32-bit data.
+After that, 31 [general purpose registers]{x=term} are listed, numbered [`x1`
+through `x31`]{x=reg}. These can contain any 32-bit data.
 
 (If you're wondering, there are no flags for RV32I.)
 
@@ -237,9 +243,10 @@ puts the result in `rd`.
 add rd, rs1, rs2
 ```
 
-The [`sub`]{x=insn} instruction subtracts the value in `rs2` from the value in
-`rs1` (i.e. `rs1 - rs2`), and puts the result in `rd`. There's no corresponding
-`subi` instruction --- Just use `addi` with a negative number.
+The opposite of addition is subtraction. The [`sub`]{x=insn} instruction
+subtracts the value in `rs2` from the value in `rs1` (i.e. `rs1 - rs2`), and
+puts the result in `rd`. There's no corresponding `subi` instruction --- Just
+use `addi` with a negative number.
 
 ```
 sub rd, rs1, rs2
@@ -264,7 +271,7 @@ subtractions:
     ebreak
 ```
 
-One thing you may have noticed is that the immediate value has a limited range,
+One thing you should note is that the immediate value has a limited range,
 namely `[-2048, 2047]`, the range of a 12-bit two's complement signed integer.
 This is because RV32I uses fixed 32-bit i.e. 4-byte instructions, and only the
 top 12 bits are available to encode an immediate value. You can see the
@@ -312,7 +319,7 @@ Subtracting from zero is negation. What's negative of `0x123`?
 
 
 ```emulator
-    addi x10, x0, 0x123
+    li x10, 0x123
     sub x11, x0, x10
 
     ebreak
@@ -329,7 +336,7 @@ Speaking of overflow wrap-around, what happens if we add something too much and
 it overflows? We'll use `add` to repeatedly double `0x123` and see what happens:
 
 ```emulator
-    addi x10, x0, 0x123
+    li x10, 0x123
     add x10, x10, x10
     add x10, x10, x10
     add x10, x10, x10
@@ -372,7 +379,8 @@ bitwise logical operations on them.
 
 The [`and`]{x=insn} instruction performs a bitwise-"and" between the bits of
 `rs1` and `rs2` and puts the result in `rd`. The [`or`]{x=insn} and
-[`xor`]{x=insn} instructions similarly performs bitwise-"or" and bitwise-"xor".
+[`xor`]{x=insn} instructions similarly performs bitwise-"or" and bitwise-"xor",
+respectively.
 
 ```
 and rd, rs1, rs2
@@ -392,11 +400,11 @@ xori rd, rs1, imm
 Here are some random bit operation examples you can play with:
 
 ```emulator
-    addi x10, x0, 0x5a1
+    li x10, 0x5a1
     xori x10, x10, 0xf0
     xori x10, x10, -1
 
-    addi x11, x0, 0x5a1
+    li x11, 0x5a1
     addi x12, x11, -1
     and x11, x11, x12
     addi x12, x11, -1
@@ -404,7 +412,7 @@ Here are some random bit operation examples you can play with:
     addi x12, x11, -1
     and x11, x11, x12
 
-    addi x13, x0, 0x5a1
+    li x13, 0x5a1
     ori x14, x13, 0xf
     ori x14, x13, 0xff
     ori x14, x13, 0xf0
@@ -418,7 +426,118 @@ all ones. For example, using `-1` as `imm` means the second operand is binary
 all ones, or `0xffff_ffff`. This allows us to use `xori rd, rs1, -1` as
 bitwise-"not".
 
+```emulator
+    li x10, 0x5a1
+    xori x11, x10, -1
+
+    or x12, x10, x11
+    add x13, x10, x11
+
+    ebreak
+```
+
+Another interesting operation you can do is to round/[align]{x=term} something up or
+down to a multiple of a power of two. For example, if you want to find the
+closest multiple of 16 below `a`, in binary that would be clearing the lowest 4
+bits, or `a & ~0b1111`. Conveniently, that's `a & -16` in two's complement.
+
+Aligning up is less intuitive, but one idea would be adding 16 first. However
+that gives an incorrect result for powers of 16. It's easy enough to fix though:
+adding one less works exactly right: `(a + 15) & -16`
+
+```emulator
+    li x10, 0x123
+    andi x11, x10, -16
+
+    addi x12, x10, 15
+    andi x12, x12, -16
+    ebreak
+```
+
 ### Comparison instructions
+
+Usually when you write a comparison of some sort like `a == b` or `a >= b`, it's
+used as a condition for some `if` or loop, but... those things are complicated!
+We're getting to it later.
+
+Sometimes you just want a boolean value out of a comparison. The C convention
+uses 1 for true and 0 for false, and since the world runs on C now, that's what
+RISC-V provides.
+
+In C there are six comparison operators:
+
+```
+== != < > <= >=
+```
+
+The values being compared can also be both signed or both unsigned.
+
+How many comparison instructions do we have at our disposal? Let's see...
+
+```
+slt rd, rs1, rs2
+sltu rd, rs1, rs2
+slti rd, rs1, imm
+sltiu rd, rs1, imm
+```
+
+The [`slt`]{x=insn} instruction compares `rs1` and `rs2` as signed 32-bit
+integers, and sets `rd` to `1` if `rs1 < rs2`, and `0` otherwise (`rs1 >= rs2`).
+The [`sltu`]{x=insn} instruction is similar but it treats the operands as
+unsigned values. [`slti`]{x=insn} and [`sltiu`]{x=insn} are similar but the
+second operand is an immediate value.
+
+(Of particular note is `sltiu`, where the immediate operand still has the range
+`[-2048, 2047]` but is sign extended to 32 bits and then treated as an unsigned
+value, like what would happen in C with `a < (unsigned)-1`.)
+
+That's... one of the six comparisons settled. What about the others? As it turns
+out, we can synthesize any of the other five, using up to two instructions.
+
+Making `>` from `<` is easy, as you can just swap the operands. Using `xori`
+with `1` we can invert the result of a comparison, giving as `<=` and `>=`.
+
+```
+    li x10, 0x3
+    li x11, 0x5
+
+    slt x12, x10, x11   # x10 < x11
+    slt x13, x11, x10   # x10 > x11
+
+    xori x14, x12, 1    # x10 >= x11  i.e.  !(x10 < x11)
+    xori x15, x13, 1    # x10 <= x11  i.e.  !(x10 > x11)
+```
+
+That was signed comparison but unsigned comparison works the same using `sltu`
+instead of `slt`.
+
+As for `==` and `!=`, let's tackle the easier case of `a == 0` and `a != 0`
+first. We will use the fact that for unsigned values, `a != 0` is equivalent to
+`a > 0`. The negation of that is `a <= 0`, which is the same as `a < 1`.
+
+```
+    li x10, 0
+
+    sltu x11, x0, x10    # 0 <u x10  i.e.  x10 != 0
+    sltiu x12, x10, 1    # x10 <u 1  i.e.  x10 == 0
+```
+
+As a bonus, this is also how we get logical not and casting to `bool`.
+
+Now that we have these, `a == b` is just `(a - b) == 0`, and `a != b` is just
+`(a - b) != 0`.
+
+In summary: (`[u]` means use `u` for unsigned comparison and nothing for signed
+comparison)
+
+- `a < b`: `slt[u]`
+- `a > b`: `slt[u] reversed`
+- `a <= b`: `slt[u] reversed ; xori 1`
+- `a >= b`: `slt[u] ; xori 1`
+- `a == 0`: `sltu x0`
+- `a != 0`: `sltiu 1`
+- `a == b`: `sub ; sltu x0`
+- `a != b`: `sub ; sltiu 1`
 
 ### Shift instructions
 
@@ -438,8 +557,8 @@ bitwise-"not".
 | `or[i]` | `a | b` | `[-2048, 2047]` |
 | `and[i]` | `a & b` | `[-2048, 2047]` |
 | `sll[i]` | `a << b` | `[0, 31]` |
-| `srl[i]` | <code>a &lt;&lt;<sub>u</sub> b</code> | `[0, 31]` |
-| `sra[i]` | <code>a &lt;&lt;<sub>s</sub> b</code> | `[0, 31]` |
+| `srl[i]` | <code>a &gt;&gt;<sub>u</sub> b</code> | `[0, 31]` |
+| `sra[i]` | <code>a &gt;&gt;<sub>s</sub> b</code> | `[0, 31]` |
 
 # Index
 
