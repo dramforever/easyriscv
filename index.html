@@ -60,6 +60,7 @@ which actually works completely fine with only the instructions we’ll
 cover here.</p>
 <p>Speaking of instructions we will cover, why don’t we meet the 45 of
 them right here and now:</p>
+<!-- TODO: Ordering? -->
 <pre><code>lui auipc jal jalr
 beq bne blt bge bltu bgeu
 lb lh lw lbu lhu sb sh sw
@@ -399,9 +400,9 @@ C now, that’s what RISC-V provides.</p>
 unsigned.</p>
 <p>How many comparison instructions do we have at our disposal? Let’s
 see…</p>
-<p>The <span id="insn-slt"><em><code>slt</code></em></span> instruction
-compares <code>rs1</code> and <code>rs2</code> as signed 32-bit
-integers, and sets <code>rd</code> to <code>1</code> if
+<p>The <span id="insn-slt"><em><code>slt</code></em></span> (“set less
+than”) instruction compares <code>rs1</code> and <code>rs2</code> as
+signed 32-bit integers, and sets <code>rd</code> to <code>1</code> if
 <code>rs1 &lt; rs2</code>, and <code>0</code> otherwise
 (<code>rs1 &gt;= rs2</code>). The <span
 id="insn-sltu"><em><code>sltu</code></em></span> instruction is similar
@@ -443,10 +444,12 @@ case of <code>a == 0</code> and <code>a != 0</code> first. We will use
 the fact that for unsigned values, <code>a != 0</code> is equivalent to
 <code>a &gt; 0</code>. The negation of that is <code>a &lt;= 0</code>,
 which is the same as <code>a &lt; 1</code>.</p>
-<pre><code>    li x10, 0
+<div class="emulator-disabled">
+    li x10, 0
 
     sltu x11, x0, x10   # 0 &lt;u x10  i.e.  x10 != 0
-    sltiu x12, x10, 1   # x10 &lt;u 1  i.e.  x10 == 0</code></pre>
+    sltiu x12, x10, 1   # x10 &lt;u 1  i.e.  x10 == 0
+</div>
 <p>As a bonus, this is also how we get logical not and converting
 integer to boolean.</p>
 <p>Now that we have these, <code>a == b</code> is just
@@ -475,28 +478,32 @@ comparison and nothing for signed comparison)</p>
 <li><code>a != b</code>: <code>sub ; sltiu 1</code></li>
 </ul>
 <h3 id="shift-instructions">Shift instructions</h3>
-<p>There is no way I can do justice to the usage of bit shift
-instructions in the middle of a tutorial on RISC-V assembly. If you’re
-here, you’ve probably heard of them. There’s nothing really special to
-the way they appear in usage for RISC-V.</p>
+<p>There is no way I can do justice to the usage of bit shifts in the
+middle of a tutorial on RISC-V assembly. If you’re here, you’ve probably
+heard of them. There’s nothing really special to the way they appear in
+usage for RISC-V.</p>
 <p>There are two variants for right shifting: <span
 id="insn-srl"><em><code>srl</code></em></span> and <span
-id="insn-srli"><em><code>srli</code></em></span> performs “logical” or
-unsigned right shift where the leftmost or most significant bits are
-filled with zeros.</p>
+id="insn-srli"><em><code>srli</code></em></span> (“shift right logical
+(immediate)”) performs “logical” or unsigned right shift where the
+leftmost or most significant bits are filled with zeros.</p>
 <p><span id="insn-sra"><em><code>sra</code></em></span> and <span
-id="insn-srai"><em><code>srai</code></em></span> performs “arithmetic”
-or signed right shift where the leftmost bits are filled with the same
-of what highest/sign bit was. So if you shift a negative value, you get
-a negative result; if you shift a non-negative value, you get a
-non-negative result.</p>
+id="insn-srai"><em><code>srai</code></em></span> (“shift right
+arithmetic (immediate)”) performs “arithmetic” or signed right shift
+where the leftmost bits are filled with the same of what highest/sign
+bit was. So if you shift a negative value, you get a negative result; if
+you shift a non-negative value, you get a non-negative result.</p>
+<pre><code>srl rd, rs1, rs2
+sra rd, rs1, rs2
+srli rd, rs1, imm
+srai rd, rs1, imm</code></pre>
 <p>As before, the ones with the <code>i</code> suffix take an immediate
 value as the second operand, and the ones without <code>i</code> take a
 register.</p>
 <div class="emulator-disabled">
     li x10, -3
     srai x11, x10, 16
-    srli x11, x10, 16
+    srli x12, x10, 16
     ebreak
 </div>
 <p>So <code>a</code> means “arithmetic”, <code>l</code> means “logical”.
@@ -504,8 +511,11 @@ Got it.</p>
 <p>Left shifts have no such distinction. For consistency they are still
 “logical”: <span id="insn-sll"><em><code>sll</code></em></span> is left
 shift, and <span id="insn-slli"><em><code>slli</code></em></span> is
-left shift with immediate. Aha, now we can blow up <code>0x123</code>
-without repeating myself so much:</p>
+left shift with immediate.</p>
+<pre><code>sll rd, rs1, rs2
+slli rd, rs1, imm</code></pre>
+<p>Aha, now we can blow up <code>0x123</code> without repeating myself
+so much:</p>
 <div class="emulator-disabled">
     li x10, 0x123
     slli x10, x10, 10
@@ -526,6 +536,34 @@ words only the last 5 bits are taken into account:</p>
 
     ebreak
 </div>
+<p>For some fun, let’s try multiplying a value by 10, something you
+would do when parsing decimal numbers: <code>a * 10</code> can be
+rewritten as <code>(a &lt;&lt; 1) + (a &lt;&lt; 3)</code>:</p>
+<div class="emulator-disabled">
+    li x10, 0x5
+
+    slli x11, x10, 1
+    slli x12, x10, 3
+    add x11, x11, x12
+
+    ebreak
+</div>
+<h3 id="thats-it">That’s it…?</h3>
+<p>That’s it?</p>
+<p>You may have noticed some glaring omissions. What we’ve learned
+doesn’t even cover grade school math: multiplication and division are
+missing.</p>
+<p>RISC-V is designed with <span
+id="term-extensions"><em>extensions</em></span> in mind. Remember that
+as said in the introduction, RV32I is the barest bones of the barest
+bones we’ve got. Forcing everyone to make their processors with
+multiplication and division even for tasks that don’t need them would
+waste silicon area and money on every chip. Instead those making RISC-V
+processors have great freedom to choose, and indeed some would say, they
+have too much freedom.</p>
+<p>For us… Honestly, I’m just glad we’ve been dealt a hand that we can
+tackle completely in full. There’s no way I’m finishing writing this
+tutorial if it were more full-fledged.</p>
 <h3 id="summary-of-computational-instructions">Summary of computational
 instructions</h3>
 <p>(Operand <code>a</code> is <code>rs1</code>, and <code>b</code> is
@@ -598,15 +636,116 @@ unsigned and <code>s</code> means two’s complement signed.)</p>
 </tr>
 </tbody>
 </table>
+<h2 id="intermission-larger-numbers"><a
+href="#intermission-larger-numbers" class="anchor-link"
+aria-hidden="true">⋄</a>Intermission: Larger numbers</h2>
+<p>The <code>addi</code> instruction has limit on the immediate value.
+How do we make bigger values?</p>
+<p>The <span id="insn-lui"><em><code>lui</code></em></span> (“load upper
+immediate”) instruction takes an immediate in the range
+<code>[0, 1048575]</code> (i.e. up to <code>2<sup>20</sup> - 1</code>)
+and sets <code>rd</code> to that value left shifted 12 bits:</p>
+<pre><code>lui rd, imm20</code></pre>
+<p>That was… slightly confusing. Why don’t we give it a try:</p>
+<div class="emulator-disabled">
+    lui x10, 1
+    lui x11, 2
+    ebreak
+</div>
+<p>Instead of <code>li</code> loading a “low” immediate, we control the
+<em>upper</em> 20 bits of what we put in the register. After that, we
+can use another <code>addi</code> instruction to fill in the lower bits.
+For example, if we want <code>0x12345</code>:</p>
+<div class="emulator-disabled">
+    lui x10, 0x12
+    addi x10, x10, 0x345
+    ebreak
+</div>
+<p>For convenience, in assembly you can use <code>%hi()</code> and
+<code>%lo()</code> to extract the, well, high 20 and low 10 bits of a
+value. The previous example could also be written:</p>
+<div class="emulator-disabled">
+    lui x10, %hi(0x12345)
+    addi x10, x10, %lo(0x12345)
+    ebreak
+</div>
+<p>Letting <code>lui</code> handle the high 20 bits, and
+<code>addi</code> for the low 12 bits, you can make any 32-bit
+value.</p>
+<p>(A small complication arises if you want to use values with bit 11
+set. In that case, the immediate operand to <code>addi</code> will have
+to be negative. However <code>%hi</code> understands this and adds one
+to compensate, so this <code>%hi</code>/<code>%lo</code> combination
+does work for everything.)</p>
+<h2 id="jumps-and-branches"><a href="#jumps-and-branches"
+class="anchor-link" aria-hidden="true">⋄</a>Jumps and branches</h2>
+<p>So far, everything that we’ve had so far can be done on even the most
+basic programmer’s calculator. To truly make a computer… do computer
+stuff, we’d want loops and conditionals.</p>
+<p>In RISC-V parlance, a <span id="term-branch"><em>branch</em></span>
+is a conditional transfer of control flow, and a <span
+id="term-jump"><em>jump</em></span> is an unconditional transfer of
+control flow.</p>
+<p>I think the branch instructions are slightly simpler, so let’s start
+with those.</p>
+<h3 id="branches">Branches</h3>
+<p>All the branch instruction follow the form “If some comparison, go to
+somewhere.” The conditions are:</p>
+<ul>
+<li><span id="insn-beq"><em><code>beq</code></em></span>:
+<code>rs1 == rs2</code> (“equal”)</li>
+<li><span id="insn-bne"><em><code>bne</code></em></span>:
+<code>rs1 != rs2</code> (“not equal”)</li>
+<li><span id="insn-blt"><em><code>blt</code></em></span>:
+<code>rs1 &lt; rs2</code> signed (“less than”)</li>
+<li><span id="insn-bge"><em><code>bge</code></em></span>:
+<code>rs1 &gt;= rs2</code> signed (“greater or equal”)</li>
+<li><span id="insn-bltu"><em><code>bltu</code></em></span>:
+<code>rs1 &lt; rs2</code> signed (“less than unsigned”)</li>
+<li><span id="insn-bgeu"><em><code>bgeu</code></em></span>:
+<code>rs1 &gt;= rs2</code> signed (“greater or equal unsigned”)</li>
+</ul>
+<p>(In case you’re wondering about the confusing choice of ordering
+operators here, it’s just that the negation of <code>&lt;</code> is
+<code>&gt;=</code>.)</p>
+<pre><code>beq rs1, rs2, label
+bne rs1, rs2, label
+blt rs1, rs2, label
+bge rs1, rs2, label
+bltu rs1, rs2, label
+bgeu rs1, rs2, label</code></pre>
+<p>Oh, right, almost forgot to explain what labels are. Labels are
+convenience identifiers for addresses at some line of your code. They
+are some identifier followed by a colon (like <code>this:</code>). They
+can appear on a line of its own, or before any instruction on the line.
+You can see which address they point to using the “Dump” button. The
+third operand of a branch instruction is a label to jump to if the
+condition holds.</p>
+<p>Let’s add up all the numbers from 1 to 100:</p>
+<div class="emulator-disabled">
+    li x10, 100         # i = 100
+    li x11, 0           # sum = 0
+
+loop:
+    add x11, x11, x10   # sum = sum + i
+    addi x10, x10, -1   # i = i - 1
+    blt x0, x10, loop   # If i &gt; 0: loop again
+                        # Otherwise: done
+
+    ebreak
+</div>
 <h1 id="index">Index</h1>
 <ul>
 <li><a href="#term-align">align</a></li>
+<li><a href="#term-branch">branch</a></li>
 <li><a href="#term-destination-register">destination register</a></li>
+<li><a href="#term-extensions">extensions</a></li>
 <li><a href="#term-general-purpose-registers">general purpose
 registers</a></li>
 <li><a href="#term-imm"><code>imm</code></a></li>
 <li><a href="#term-immediate-value">immediate value</a></li>
 <li><a href="#term-instruction-syntax">instruction syntax</a></li>
+<li><a href="#term-jump">jump</a></li>
 <li><a href="#term-pc"><code>pc</code></a></li>
 <li><a href="#term-program-counter">program counter</a></li>
 <li><a href="#term-pseudoinstructions">pseudoinstructions</a></li>
@@ -626,7 +765,14 @@ registers</a></li>
 <li><a href="#insn-addi"><code>addi</code></a></li>
 <li><a href="#insn-and"><code>and</code></a></li>
 <li><a href="#insn-andi"><code>andi</code></a></li>
+<li><a href="#insn-beq"><code>beq</code></a></li>
+<li><a href="#insn-bge"><code>bge</code></a></li>
+<li><a href="#insn-bgeu"><code>bgeu</code></a></li>
+<li><a href="#insn-blt"><code>blt</code></a></li>
+<li><a href="#insn-bltu"><code>bltu</code></a></li>
+<li><a href="#insn-bne"><code>bne</code></a></li>
 <li><a href="#insn-li"><code>li</code></a></li>
+<li><a href="#insn-lui"><code>lui</code></a></li>
 <li><a href="#insn-mv"><code>mv</code></a></li>
 <li><a href="#insn-or"><code>or</code></a></li>
 <li><a href="#insn-ori"><code>ori</code></a></li>

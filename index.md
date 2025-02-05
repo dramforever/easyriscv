@@ -70,6 +70,8 @@ only the instructions we'll cover here.
 Speaking of instructions we will cover, why don't we meet the 45 of them right
 here and now:
 
+<!-- TODO: Ordering? -->
+
 ```
 lui auipc jal jalr
 beq bne blt bge bltu bgeu
@@ -474,11 +476,11 @@ The values being compared can also be both signed or both unsigned.
 
 How many comparison instructions do we have at our disposal? Let's see...
 
-The [`slt`]{x=insn} instruction compares `rs1` and `rs2` as signed 32-bit
-integers, and sets `rd` to `1` if `rs1 < rs2`, and `0` otherwise (`rs1 >= rs2`).
-The [`sltu`]{x=insn} instruction is similar but it treats the operands as
-unsigned values. [`slti`]{x=insn} and [`sltiu`]{x=insn} are similar but the
-second operand is an immediate value.
+The [`slt`]{x=insn} ("set less than") instruction compares `rs1` and `rs2` as
+signed 32-bit integers, and sets `rd` to `1` if `rs1 < rs2`, and `0` otherwise
+(`rs1 >= rs2`). The [`sltu`]{x=insn} instruction is similar but it treats the
+operands as unsigned values. [`slti`]{x=insn} and [`sltiu`]{x=insn} are similar
+but the second operand is an immediate value.
 
 ```
 slt rd, rs1, rs2
@@ -517,7 +519,7 @@ As for `==` and `!=`, let's tackle the easier case of `a == 0` and `a != 0`
 first. We will use the fact that for unsigned values, `a != 0` is equivalent to
 `a > 0`. The negation of that is `a <= 0`, which is the same as `a < 1`.
 
-```
+```emulator
     li x10, 0
 
     sltu x11, x0, x10   # 0 <u x10  i.e.  x10 != 0
@@ -555,19 +557,26 @@ comparison)
 
 ### Shift instructions
 
-There is no way I can do justice to the usage of bit shift instructions in the
-middle of a tutorial on RISC-V assembly. If you're here, you've probably heard
-of them. There's nothing really special to the way they appear in usage for
-RISC-V.
+There is no way I can do justice to the usage of bit shifts in the middle of a
+tutorial on RISC-V assembly. If you're here, you've probably heard of them.
+There's nothing really special to the way they appear in usage for RISC-V.
 
 There are two variants for right shifting: [`srl`]{x=insn} and [`srli`]{x=insn}
-performs "logical" or unsigned right shift where the leftmost or most
-significant bits are filled with zeros.
+("shift right logical (immediate)") performs "logical" or unsigned right shift
+where the leftmost or most significant bits are filled with zeros.
 
-[`sra`]{x=insn} and [`srai`]{x=insn} performs "arithmetic" or signed right shift
-where the leftmost bits are filled with the same of what highest/sign bit was.
-So if you shift a negative value, you get a negative result; if you shift a
-non-negative value, you get a non-negative result.
+[`sra`]{x=insn} and [`srai`]{x=insn} ("shift right arithmetic (immediate)")
+performs "arithmetic" or signed right shift where the leftmost bits are filled
+with the same of what highest/sign bit was. So if you shift a negative value,
+you get a negative result; if you shift a non-negative value, you get a
+non-negative result.
+
+```
+srl rd, rs1, rs2
+sra rd, rs1, rs2
+srli rd, rs1, imm
+srai rd, rs1, imm
+```
 
 As before, the ones with the `i` suffix take an immediate value as the second
 operand, and the ones without `i` take a register.
@@ -575,7 +584,7 @@ operand, and the ones without `i` take a register.
 ```emulator
     li x10, -3
     srai x11, x10, 16
-    srli x11, x10, 16
+    srli x12, x10, 16
     ebreak
 ```
 
@@ -583,7 +592,14 @@ So `a` means "arithmetic", `l` means "logical". Got it.
 
 Left shifts have no such distinction. For consistency they are still "logical":
 [`sll`]{x=insn} is left shift, and [`slli`]{x=insn} is left shift with
-immediate. Aha, now we can blow up `0x123` without repeating myself so much:
+immediate.
+
+```
+sll rd, rs1, rs2
+slli rd, rs1, imm
+```
+
+Aha, now we can blow up `0x123` without repeating myself so much:
 
 ```emulator
     li x10, 0x123
@@ -608,6 +624,37 @@ bits are taken into account:
     ebreak
 ```
 
+For some fun, let's try multiplying a value by 10, something you would do when
+parsing decimal numbers: `a * 10` can be rewritten as `(a << 1) + (a << 3)`:
+
+```emulator
+    li x10, 0x5
+
+    slli x11, x10, 1
+    slli x12, x10, 3
+    add x11, x11, x12
+
+    ebreak
+```
+
+### That's it...?
+
+That's it?
+
+You may have noticed some glaring omissions. What we've learned doesn't even
+cover grade school math: multiplication and division are missing.
+
+RISC-V is designed with [extensions]{x=term} in mind. Remember that as said in
+the introduction, RV32I is the barest bones of the barest bones we've got.
+Forcing everyone to make their processors with multiplication and division even
+for tasks that don't need them would waste silicon area and money on every chip.
+Instead those making RISC-V processors have great freedom to choose, and indeed
+some would say, they have too much freedom.
+
+For us... Honestly, I'm just glad we've been dealt a hand that we can tackle
+completely in full. There's no way I'm finishing writing this tutorial if it
+were more full-fledged.
+
 ### Summary of computational instructions
 
 (Operand `a` is `rs1`, and `b` is `rs2` or immediate. In the instruction name
@@ -626,6 +673,112 @@ bits are taken into account:
 | `sll[i]` | `a << b` | `[0, 31]` |
 | `srl[i]` | <code>a &gt;&gt;<sub>u</sub> b</code> | `[0, 31]` |
 | `sra[i]` | <code>a &gt;&gt;<sub>s</sub> b</code> | `[0, 31]` |
+
+## Intermission: Larger numbers
+
+The `addi` instruction has limit on the immediate value. How do we make bigger
+values?
+
+The [`lui`]{x=insn} ("load upper immediate") instruction takes an immediate in
+the range `[0, 1048575]` (i.e. up to <code>2<sup>20</sup> - 1</code>) and sets
+`rd` to that value left shifted 12 bits:
+
+```
+lui rd, imm20
+```
+
+That was... slightly confusing. Why don't we give it a try:
+
+```emulator
+    lui x10, 1
+    lui x11, 2
+    ebreak
+```
+
+Instead of `li` loading a "low" immediate, we control the *upper* 20 bits of
+what we put in the register. After that, we can use another `addi` instruction
+to fill in the lower bits. For example, if we want `0x12345`:
+
+```emulator
+    lui x10, 0x12
+    addi x10, x10, 0x345
+    ebreak
+```
+
+For convenience, in assembly you can use `%hi()` and `%lo()` to extract the,
+well, high 20 and low 10 bits of a value. The previous example could also be
+written:
+
+```emulator
+    lui x10, %hi(0x12345)
+    addi x10, x10, %lo(0x12345)
+    ebreak
+```
+
+Letting `lui` handle the high 20 bits, and `addi` for the low 12 bits, you can
+make any 32-bit value.
+
+(A small complication arises if you want to use values with bit 11 set. In that
+case, the immediate operand to `addi` will have to be negative. However `%hi`
+understands this and adds one to compensate, so this `%hi`/`%lo` combination
+does work for everything.)
+
+## Jumps and branches
+
+So far, everything that we've had so far can be done on even the most basic
+programmer's calculator. To truly make a computer... do computer stuff, we'd
+want loops and conditionals.
+
+In RISC-V parlance, a [branch]{x=term} is a conditional transfer of control
+flow, and a [jump]{x=term} is an unconditional transfer of control flow.
+
+I think the branch instructions are slightly simpler, so let's start with those.
+
+### Branches
+
+All the branch instruction follow the form "If some comparison, go to
+somewhere." The conditions are:
+
+- [`beq`]{x=insn}: `rs1 == rs2` ("equal")
+- [`bne`]{x=insn}: `rs1 != rs2` ("not equal")
+- [`blt`]{x=insn}: `rs1 < rs2` signed ("less than")
+- [`bge`]{x=insn}: `rs1 >= rs2` signed ("greater or equal")
+- [`bltu`]{x=insn}: `rs1 < rs2` signed ("less than unsigned")
+- [`bgeu`]{x=insn}: `rs1 >= rs2` signed ("greater or equal unsigned")
+
+(In case you're wondering about the confusing choice of ordering operators here,
+it's just that the negation of `<` is `>=`.)
+
+```
+beq rs1, rs2, label
+bne rs1, rs2, label
+blt rs1, rs2, label
+bge rs1, rs2, label
+bltu rs1, rs2, label
+bgeu rs1, rs2, label
+```
+
+Oh, right, almost forgot to explain what labels are. Labels are convenience
+identifiers for addresses at some line of your code. They are some identifier
+followed by a colon (like `this:`). They can appear on a line of its own, or
+before any instruction on the line. You can see which address they point to
+using the "Dump" button. The third operand of a branch instruction is a label to
+jump to if the condition holds.
+
+Let's add up all the numbers from 1 to 100:
+
+```emulator
+    li x10, 100         # i = 100
+    li x11, 0           # sum = 0
+
+loop:
+    add x11, x11, x10   # sum = sum + i
+    addi x10, x10, -1   # i = i - 1
+    blt x0, x10, loop   # If i > 0: loop again
+                        # Otherwise: done
+
+    ebreak
+```
 
 # Index
 
