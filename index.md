@@ -474,18 +474,18 @@ The values being compared can also be both signed or both unsigned.
 
 How many comparison instructions do we have at our disposal? Let's see...
 
+The [`slt`]{x=insn} instruction compares `rs1` and `rs2` as signed 32-bit
+integers, and sets `rd` to `1` if `rs1 < rs2`, and `0` otherwise (`rs1 >= rs2`).
+The [`sltu`]{x=insn} instruction is similar but it treats the operands as
+unsigned values. [`slti`]{x=insn} and [`sltiu`]{x=insn} are similar but the
+second operand is an immediate value.
+
 ```
 slt rd, rs1, rs2
 sltu rd, rs1, rs2
 slti rd, rs1, imm
 sltiu rd, rs1, imm
 ```
-
-The [`slt`]{x=insn} instruction compares `rs1` and `rs2` as signed 32-bit
-integers, and sets `rd` to `1` if `rs1 < rs2`, and `0` otherwise (`rs1 >= rs2`).
-The [`sltu`]{x=insn} instruction is similar but it treats the operands as
-unsigned values. [`slti`]{x=insn} and [`sltiu`]{x=insn} are similar but the
-second operand is an immediate value.
 
 (Of particular note is `sltiu`, where the immediate operand still has the range
 `[-2048, 2047]` but is sign extended to 32 bits and then treated as an unsigned
@@ -497,7 +497,7 @@ out, we can synthesize any of the other five, using up to two instructions.
 Making `>` from `<` is easy, as you can just swap the operands. Using `xori`
 with `1` we can invert the result of a comparison, giving as `<=` and `>=`.
 
-```
+```emulator
     li x10, 0x3
     li x11, 0x5
 
@@ -506,6 +506,8 @@ with `1` we can invert the result of a comparison, giving as `<=` and `>=`.
 
     xori x14, x12, 1    # x10 >= x11  i.e.  !(x10 < x11)
     xori x15, x13, 1    # x10 <= x11  i.e.  !(x10 > x11)
+
+    ebreak
 ```
 
 That was signed comparison but unsigned comparison works the same using `sltu`
@@ -518,14 +520,26 @@ first. We will use the fact that for unsigned values, `a != 0` is equivalent to
 ```
     li x10, 0
 
-    sltu x11, x0, x10    # 0 <u x10  i.e.  x10 != 0
-    sltiu x12, x10, 1    # x10 <u 1  i.e.  x10 == 0
+    sltu x11, x0, x10   # 0 <u x10  i.e.  x10 != 0
+    sltiu x12, x10, 1   # x10 <u 1  i.e.  x10 == 0
 ```
 
-As a bonus, this is also how we get logical not and casting to `bool`.
+As a bonus, this is also how we get logical not and converting integer to
+boolean.
 
 Now that we have these, `a == b` is just `(a - b) == 0`, and `a != b` is just
 `(a - b) != 0`.
+
+```emulator
+    li x10, 0x3         # a
+    li x11, 0x5         # b
+    sub x10, x10, x11   # x10 = a - b
+
+    sltu x11, x0, x10   # 0 <u x10  i.e.  x10 != 0
+    sltiu x12, x10, 1   # x10 <u 1  i.e.  x10 == 0
+
+    ebreak
+```
 
 In summary: (`[u]` means use `u` for unsigned comparison and nothing for signed
 comparison)
@@ -540,6 +554,59 @@ comparison)
 - `a != b`: `sub ; sltiu 1`
 
 ### Shift instructions
+
+There is no way I can do justice to the usage of bit shift instructions in the
+middle of a tutorial on RISC-V assembly. If you're here, you've probably heard
+of them. There's nothing really special to the way they appear in usage for
+RISC-V.
+
+There are two variants for right shifting: [`srl`]{x=insn} and [`srli`]{x=insn}
+performs "logical" or unsigned right shift where the leftmost or most
+significant bits are filled with zeros.
+
+[`sra`]{x=insn} and [`srai`]{x=insn} performs "arithmetic" or signed right shift
+where the leftmost bits are filled with the same of what highest/sign bit was.
+So if you shift a negative value, you get a negative result; if you shift a
+non-negative value, you get a non-negative result.
+
+As before, the ones with the `i` suffix take an immediate value as the second
+operand, and the ones without `i` take a register.
+
+```emulator
+    li x10, -3
+    srai x11, x10, 16
+    srli x11, x10, 16
+    ebreak
+```
+
+So `a` means "arithmetic", `l` means "logical". Got it.
+
+Left shifts have no such distinction. For consistency they are still "logical":
+[`sll`]{x=insn} is left shift, and [`slli`]{x=insn} is left shift with
+immediate. Aha, now we can blow up `0x123` without repeating myself so much:
+
+```emulator
+    li x10, 0x123
+    slli x10, x10, 10
+    slli x10, x10, 10
+    slli x10, x10, 10
+    ebreak
+```
+
+The immediate value for shift instructions are special: they can only be in the
+range of 0 to 31, inclusive, because it doesn't make sense to shift by a
+negative amount, or by more than 31. When the shift amount is taken from a
+register, the value is considered modulo 32, or in other words only the last 5
+bits are taken into account:
+
+```emulator
+    li x10, 0x444
+    li x11, 0x81
+
+    srl x10, x10, x11   # Same as shifting by 1
+
+    ebreak
+```
 
 ### Summary of computational instructions
 

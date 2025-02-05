@@ -44,8 +44,17 @@ function Div(el)
 end
 
 function CodeBlock(el)
+  function html_escape(s)
+    return string.gsub(s, "[}{\">/<'&]", {
+        ["&"] = "&amp;",
+        ["<"] = "&lt;",
+        [">"] = "&gt;",
+        ['"'] = "&quot;"
+    })
+  end
+
   if el.classes[1] == "emulator" then
-    return pandoc.Div(pandoc.RawInline('html', el.text), {
+    return pandoc.Div(pandoc.RawInline('html', html_escape(el.text)), {
       class = "emulator-disabled"
     })
   end

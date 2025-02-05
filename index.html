@@ -399,10 +399,6 @@ C now, that’s what RISC-V provides.</p>
 unsigned.</p>
 <p>How many comparison instructions do we have at our disposal? Let’s
 see…</p>
-<pre><code>slt rd, rs1, rs2
-sltu rd, rs1, rs2
-slti rd, rs1, imm
-sltiu rd, rs1, imm</code></pre>
 <p>The <span id="insn-slt"><em><code>slt</code></em></span> instruction
 compares <code>rs1</code> and <code>rs2</code> as signed 32-bit
 integers, and sets <code>rd</code> to <code>1</code> if
@@ -413,6 +409,10 @@ but it treats the operands as unsigned values. <span
 id="insn-slti"><em><code>slti</code></em></span> and <span
 id="insn-sltiu"><em><code>sltiu</code></em></span> are similar but the
 second operand is an immediate value.</p>
+<pre><code>slt rd, rs1, rs2
+sltu rd, rs1, rs2
+slti rd, rs1, imm
+sltiu rd, rs1, imm</code></pre>
 <p>(Of particular note is <code>sltiu</code>, where the immediate
 operand still has the range <code>[-2048, 2047]</code> but is sign
 extended to 32 bits and then treated as an unsigned value, like what
@@ -424,14 +424,18 @@ instructions.</p>
 just swap the operands. Using <code>xori</code> with <code>1</code> we
 can invert the result of a comparison, giving as <code>&lt;=</code> and
 <code>&gt;=</code>.</p>
-<pre><code>    li x10, 0x3
+<div class="emulator-disabled">
+    li x10, 0x3
     li x11, 0x5
 
     slt x12, x10, x11   # x10 &lt; x11
     slt x13, x11, x10   # x10 &gt; x11
 
     xori x14, x12, 1    # x10 &gt;= x11  i.e.  !(x10 &lt; x11)
-    xori x15, x13, 1    # x10 &lt;= x11  i.e.  !(x10 &gt; x11)</code></pre>
+    xori x15, x13, 1    # x10 &lt;= x11  i.e.  !(x10 &gt; x11)
+
+    ebreak
+</div>
 <p>That was signed comparison but unsigned comparison works the same
 using <code>sltu</code> instead of <code>slt</code>.</p>
 <p>As for <code>==</code> and <code>!=</code>, let’s tackle the easier
@@ -441,13 +445,23 @@ the fact that for unsigned values, <code>a != 0</code> is equivalent to
 which is the same as <code>a &lt; 1</code>.</p>
 <pre><code>    li x10, 0
 
-    sltu x11, x0, x10    # 0 &lt;u x10  i.e.  x10 != 0
-    sltiu x12, x10, 1    # x10 &lt;u 1  i.e.  x10 == 0</code></pre>
-<p>As a bonus, this is also how we get logical not and casting to
-<code>bool</code>.</p>
+    sltu x11, x0, x10   # 0 &lt;u x10  i.e.  x10 != 0
+    sltiu x12, x10, 1   # x10 &lt;u 1  i.e.  x10 == 0</code></pre>
+<p>As a bonus, this is also how we get logical not and converting
+integer to boolean.</p>
 <p>Now that we have these, <code>a == b</code> is just
 <code>(a - b) == 0</code>, and <code>a != b</code> is just
 <code>(a - b) != 0</code>.</p>
+<div class="emulator-disabled">
+    li x10, 0x3         # a
+    li x11, 0x5         # b
+    sub x10, x10, x11   # x10 = a - b
+
+    sltu x11, x0, x10   # 0 &lt;u x10  i.e.  x10 != 0
+    sltiu x12, x10, 1   # x10 &lt;u 1  i.e.  x10 == 0
+
+    ebreak
+</div>
 <p>In summary: (<code>[u]</code> means use <code>u</code> for unsigned
 comparison and nothing for signed comparison)</p>
 <ul>
@@ -461,6 +475,57 @@ comparison and nothing for signed comparison)</p>
 <li><code>a != b</code>: <code>sub ; sltiu 1</code></li>
 </ul>
 <h3 id="shift-instructions">Shift instructions</h3>
+<p>There is no way I can do justice to the usage of bit shift
+instructions in the middle of a tutorial on RISC-V assembly. If you’re
+here, you’ve probably heard of them. There’s nothing really special to
+the way they appear in usage for RISC-V.</p>
+<p>There are two variants for right shifting: <span
+id="insn-srl"><em><code>srl</code></em></span> and <span
+id="insn-srli"><em><code>srli</code></em></span> performs “logical” or
+unsigned right shift where the leftmost or most significant bits are
+filled with zeros.</p>
+<p><span id="insn-sra"><em><code>sra</code></em></span> and <span
+id="insn-srai"><em><code>srai</code></em></span> performs “arithmetic”
+or signed right shift where the leftmost bits are filled with the same
+of what highest/sign bit was. So if you shift a negative value, you get
+a negative result; if you shift a non-negative value, you get a
+non-negative result.</p>
+<p>As before, the ones with the <code>i</code> suffix take an immediate
+value as the second operand, and the ones without <code>i</code> take a
+register.</p>
+<div class="emulator-disabled">
+    li x10, -3
+    srai x11, x10, 16
+    srli x11, x10, 16
+    ebreak
+</div>
+<p>So <code>a</code> means “arithmetic”, <code>l</code> means “logical”.
+Got it.</p>
+<p>Left shifts have no such distinction. For consistency they are still
+“logical”: <span id="insn-sll"><em><code>sll</code></em></span> is left
+shift, and <span id="insn-slli"><em><code>slli</code></em></span> is
+left shift with immediate. Aha, now we can blow up <code>0x123</code>
+without repeating myself so much:</p>
+<div class="emulator-disabled">
+    li x10, 0x123
+    slli x10, x10, 10
+    slli x10, x10, 10
+    slli x10, x10, 10
+    ebreak
+</div>
+<p>The immediate value for shift instructions are special: they can only
+be in the range of 0 to 31, inclusive, because it doesn’t make sense to
+shift by a negative amount, or by more than 31. When the shift amount is
+taken from a register, the value is considered modulo 32, or in other
+words only the last 5 bits are taken into account:</p>
+<div class="emulator-disabled">
+    li x10, 0x444
+    li x11, 0x81
+
+    srl x10, x10, x11   # Same as shifting by 1
+
+    ebreak
+</div>
 <h3 id="summary-of-computational-instructions">Summary of computational
 instructions</h3>
 <p>(Operand <code>a</code> is <code>rs1</code>, and <code>b</code> is
@@ -565,10 +630,16 @@ registers</a></li>
 <li><a href="#insn-mv"><code>mv</code></a></li>
 <li><a href="#insn-or"><code>or</code></a></li>
 <li><a href="#insn-ori"><code>ori</code></a></li>
+<li><a href="#insn-sll"><code>sll</code></a></li>
+<li><a href="#insn-slli"><code>slli</code></a></li>
 <li><a href="#insn-slt"><code>slt</code></a></li>
 <li><a href="#insn-slti"><code>slti</code></a></li>
 <li><a href="#insn-sltiu"><code>sltiu</code></a></li>
 <li><a href="#insn-sltu"><code>sltu</code></a></li>
+<li><a href="#insn-sra"><code>sra</code></a></li>
+<li><a href="#insn-srai"><code>srai</code></a></li>
+<li><a href="#insn-srl"><code>srl</code></a></li>
+<li><a href="#insn-srli"><code>srli</code></a></li>
 <li><a href="#insn-sub"><code>sub</code></a></li>
 <li><a href="#insn-xor"><code>xor</code></a></li>
 <li><a href="#insn-xori"><code>xori</code></a></li>
