@@ -1082,7 +1082,7 @@ export function assemble_riscv(text, origin) {
                 if (expr.special === '%hi') {
                     return {
                         type: 'ok',
-                        value: (value >>> 12) + ((value & 0x800) != 0)
+                        value: ((value >>> 12) + ((value & 0x800) != 0)) & 0xfffff
                     };
                 } else if (expr.special === '%lo') {
                     return {
