@@ -478,14 +478,14 @@ function assemble_branch(base) {
         if (rel < - (1 << 11) || rel >= (1 << 11)) {
             return {
                 type: 'error',
-                message: `Jump target ${rel} out of range`
+                message: `Jump offset ${rel} out of range`
             };
         }
 
         if (rel & 1) {
             return {
                 type: 'error',
-                message: `Jump target ${rel} is at odd offset, which is unencodable`
+                message: `Jump offset ${rel} is odd, which is unencodable`
             };
         }
 
@@ -541,7 +541,7 @@ function assemble_jal(parsed, { evaluate, view, offset, pc }) {
     if (rel & 1) {
         return {
             type: 'error',
-            message: `Jump offset ${rel} is odd and unencodable`
+            message: `Jump offset ${rel} is odd, which is unencodable`
         };
     }
 
