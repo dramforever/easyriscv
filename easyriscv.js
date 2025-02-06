@@ -132,10 +132,12 @@ function convertEmulator(el) {
     let mem = null, riscv = null, dump = null, runTask = null;
 
     const fmt = (x) => `0x${x.toString(16).padStart(8, '0')}`;
+    const prevState = [];
 
     function renderRegs() {
         const lines = [];
         const names = "zero ra sp gp tp t0 t1 t2 s0 s1 a0 a1 a2 a3 a4 a5 a6 a7 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 t3 t4 t5 t6".split(' ');
+        const skip = prevState.length === 0;
 
         const insn = mem.fetch(riscv.pc);
         lines.push(`  pc       ${fmt(riscv.pc)} (insn: ${insn === null ? '???' : fmt(insn)})\n`);
@@ -152,7 +154,19 @@ function convertEmulator(el) {
         lines.push(`mcause = ${fmt(riscv.mcause)}\n`);
         lines.push(`cycle = 0x${riscv.cycle[1].toString(16).padStart(8, '0')}_${riscv.cycle[0].toString(16).padStart(8, '0')}\n`);
         lines.push(`instret = 0x${riscv.instret[1].toString(16).padStart(8, '0')}_${riscv.instret[0].toString(16).padStart(8, '0')}\n`);
-        regsDisp.textContent = lines.join('');
+
+        regsDisp.replaceChildren(...lines.map((line) => {
+            const regsDiffDisp = document.createElement('span');
+            regsDiffDisp.textContent = line;
+            const prev = skip ? null : prevState.shift();
+            if (!skip && prev !== line) {
+                regsDiffDisp.classList.add('output-changed');
+                console.log(prev, " <=> ", line);
+            }
+            prevState.push(line)
+            console.log(prevState);
+            return regsDiffDisp;
+        }));
     }
 
     function writeOutput(text) {
@@ -161,6 +175,7 @@ function convertEmulator(el) {
     }
 
     function start() {
+        prevState.length = 0;
         const res = assemble_riscv(edit.value, 0x40000000);
 
         if (res.type === 'ok') {
