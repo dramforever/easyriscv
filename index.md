@@ -652,8 +652,8 @@ Instead those making RISC-V processors have great freedom to choose, and indeed
 some would say, they have too much freedom.
 
 For us... Honestly, I'm just glad we've been dealt a hand that we can tackle
-completely in full. There's no way I'm finishing writing this tutorial if it
-were more full-fledged.
+completely in full. There's no way I'm finishing writing this tutorial if RV32I
+wasn't so bare boned.
 
 ### Summary of computational instructions
 
@@ -778,6 +778,171 @@ loop:
                         # Otherwise: done
 
     ebreak
+```
+
+You can try your hands on making your favorite loops, like fibonacci numbers or
+something. Speaking of trying your hands, just so we're ready, here's what an
+infinite loop looks like. Try pausing or stopping the loop, and single stepping
+through the instructions.
+
+```emulator
+loop:
+    addi x10, x10, 1
+    add x11, x11, x10
+    beq x0, x0, loop
+```
+
+(If you know a thing or two about JavaScript in the browser, you'll know that a
+real infinite loop in JavaScript makes the whole page becomes unresponsive,
+unless it's in a worker or something. The "Run" button here just runs the
+emulator for a certain number of steps, pausing by giving back control to the
+event loop in between.)
+
+(This isn't the preferred way to write an unconditional jump. We'll see what is
+later.)
+
+By the way, this should be fresh on your mind from a few sections earlier, but
+in case you forgot, there's no `bgt[u]` or `ble[u]` because you can just swap
+`rs1` and `rs2` to get those.
+
+### Jumps
+
+There are two jump instructions in RISC-V. One of them is [`jal`]{x=insn} "jump
+and link", which sets `rd` to the address of the following instruction, and then
+jumps to a label:
+
+```
+jal rd, label
+```
+
+Another is [`jalr`]{x=insn} "jump and link register", which sets `rd` to the
+address of the following instruction, and then jumps to the address at `imm +
+rs1`.
+
+```
+jalr rd, imm(rs1)
+```
+
+(Actually, the address jumped to is `(imm + rs1) & ~1`, i.e. the least
+significant bit is cleared. This distinction won't come up in normal code, like,
+pretty much ever.)
+
+That was... a lot. Let's take on some simpler cases first: If `rd` is `x0` then
+the only thing these instructions do is jumping. We can use it instead of the
+branch instructions for an unconditional jump.
+
+```emulator
+loop:
+    # Yes this is an infinite loop. You can
+    # see that we execute this one
+    # instruction over and over
+    jal x0, loop
+```
+
+For convenience, a pseudoinstruction is available for you: [`j`]{x=insn} is for
+`jal` with `rd` being `x0`:
+
+```
+j label
+```
+
+As of why you would want to do this... Well, we only have 32 bits per
+instruction, and since the `jal` instruction only needs one register number
+instead of the branch instructions' two, and it doesn't need a condition, the
+instruction encoding permits jumping over a longer range. So this is always
+preferred over something like `beq x0, x0, label` for a jump.
+
+As of `jalr`, you can jump to an address that's stored in a register. In C, that
+would be dealing with function pointers. You'd need this any time where a
+dynamic dispatch is needed. For example, we load the address of `foo` into a
+register first before jumping to it.
+
+```emulator
+    lui x10, %hi(foo)
+    addi x10, x10, %lo(foo)
+    jalr x0, 0(x10)
+
+    # This isn't executed
+    li x12, 1
+    ebreak
+
+foo:
+    # This is executed
+    li x12, 2
+    ebreak
+```
+
+
+Similar to `j`, [`jr`]{x=insn} is a psuedoinstruction for `jalr` with `rd` being
+`x0` and `imm` being `0`:
+
+```
+jr rs1
+```
+
+
+Hmmm... If I didn't really need the address in `x10`, that `addi` would be
+unnecessary, since `jalr` has the ability to add a low immediate on its own:
+
+```emulator
+    lui x10, %hi(foo)
+    jalr x0, %lo(foo)(x10)
+
+    # This isn't executed
+    li x12, 1
+    ebreak
+
+foo:
+    # This is executed
+    li x12, 2
+    ebreak
+```
+
+What's the advantage of this over `jal x0`? Since `%hi` and `%lo` can represent
+any 32-bit value, this two-instruction combo can jump to any address, free from
+range restrictions. You do need a free scratch register for the high part of the
+address though, but since RISC-V gives you 31 of them, this shouldn't be too
+much of a problem.
+
+## Jump and link
+
+What's the deal with the destination register then? What do you need the address
+of the next instruction for? For jumping *back* of course. We can use this
+functionality to call functions and return back.
+
+```emulator
+    li x10, 1
+    jal x1, double  # Call double
+    jal x1, double  # Call double
+    ebreak
+
+    # Double the value in x10
+double:
+    add x10, x10, x10
+    jr x1           # Return
+```
+
+Note that I used the register `x1` for this, which is the register for providing
+the return address by convention. For convenience, if the destination register
+is omitted in `jal`, it defaults to `x1`. Meanwhile, [`ret`]{x=insn} is a
+pseudoinstruction that stands for `jr x1`, i.e. `jalr x0, 0(x1)`:
+
+```
+jal label
+ret
+```
+
+So the example above can be rewritten more conveniently as:
+
+```emulator
+    li x10, 1
+    jal foo
+    jal foo
+    ebreak
+
+foo:
+    add x10, x10, x10
+    ret
 ```
 
 # Index

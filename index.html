@@ -563,7 +563,7 @@ processors have great freedom to choose, and indeed some would say, they
 have too much freedom.</p>
 <p>For us… Honestly, I’m just glad we’ve been dealt a hand that we can
 tackle completely in full. There’s no way I’m finishing writing this
-tutorial if it were more full-fledged.</p>
+tutorial if RV32I wasn’t so bare boned.</p>
 <h3 id="summary-of-computational-instructions">Summary of computational
 instructions</h3>
 <p>(Operand <code>a</code> is <code>rs1</code>, and <code>b</code> is
@@ -734,6 +734,146 @@ loop:
 
     ebreak
 </div>
+<p>You can try your hands on making your favorite loops, like fibonacci
+numbers or something. Speaking of trying your hands, just so we’re
+ready, here’s what an infinite loop looks like. Try pausing or stopping
+the loop, and single stepping through the instructions.</p>
+<div class="emulator-disabled">
+loop:
+    addi x10, x10, 1
+    add x11, x11, x10
+    beq x0, x0, loop
+</div>
+<p>(If you know a thing or two about JavaScript in the browser, you’ll
+know that a real infinite loop in JavaScript makes the whole page
+becomes unresponsive, unless it’s in a worker or something. The “Run”
+button here just runs the emulator for a certain number of steps,
+pausing by giving back control to the event loop in between.)</p>
+<p>(This isn’t the preferred way to write an unconditional jump. We’ll
+see what is later.)</p>
+<p>By the way, this should be fresh on your mind from a few sections
+earlier, but in case you forgot, there’s no <code>bgt[u]</code> or
+<code>ble[u]</code> because you can just swap <code>rs1</code> and
+<code>rs2</code> to get those.</p>
+<h3 id="jumps">Jumps</h3>
+<p>There are two jump instructions in RISC-V. One of them is <span
+id="insn-jal"><em><code>jal</code></em></span> “jump and link”, which
+sets <code>rd</code> to the address of the following instruction, and
+then jumps to a label:</p>
+<pre><code>jal rd, label</code></pre>
+<p>Another is <span id="insn-jalr"><em><code>jalr</code></em></span>
+“jump and link register”, which sets <code>rd</code> to the address of
+the following instruction, and then jumps to the address at
+<code>imm + rs1</code>.</p>
+<pre><code>jalr rd, imm(rs1)</code></pre>
+<p>(Actually, the address jumped to is
+<code>(imm + rs1) &amp; ~1</code>, i.e. the least significant bit is
+cleared. This distinction won’t come up in normal code, like, pretty
+much ever.)</p>
+<p>That was… a lot. Let’s take on some simpler cases first: If
+<code>rd</code> is <code>x0</code> then the only thing these
+instructions do is jumping. We can use it instead of the branch
+instructions for an unconditional jump.</p>
+<div class="emulator-disabled">
+loop:
+    # Yes this is an infinite loop. You can
+    # see that we execute this one
+    # instruction over and over
+    jal x0, loop
+</div>
+<p>For convenience, a pseudoinstruction is available for you: <span
+id="insn-j"><em><code>j</code></em></span> is for <code>jal</code> with
+<code>rd</code> being <code>x0</code>:</p>
+<pre><code>j label</code></pre>
+<p>As of why you would want to do this… Well, we only have 32 bits per
+instruction, and since the <code>jal</code> instruction only needs one
+register number instead of the branch instructions’ two, and it doesn’t
+need a condition, the instruction encoding permits jumping over a longer
+range. So this is always preferred over something like
+<code>beq x0, x0, label</code> for a jump.</p>
+<p>As of <code>jalr</code>, you can jump to an address that’s stored in
+a register. In C, that would be dealing with function pointers. You’d
+need this any time where a dynamic dispatch is needed. For example, we
+load the address of <code>foo</code> into a register first before
+jumping to it.</p>
+<div class="emulator-disabled">
+    lui x10, %hi(foo)
+    addi x10, x10, %lo(foo)
+    jalr x0, 0(x10)
+
+    # This isn't executed
+    li x12, 1
+    ebreak
+
+foo:
+    # This is executed
+    li x12, 2
+    ebreak
+</div>
+<p>Similar to <code>j</code>, <span
+id="insn-jr"><em><code>jr</code></em></span> is a psuedoinstruction for
+<code>jalr</code> with <code>rd</code> being <code>x0</code> and
+<code>imm</code> being <code>0</code>:</p>
+<pre><code>jr rs1</code></pre>
+<p>Hmmm… If I didn’t really need the address in <code>x10</code>, that
+<code>addi</code> would be unnecessary, since <code>jalr</code> has the
+ability to add a low immediate on its own:</p>
+<div class="emulator-disabled">
+    lui x10, %hi(foo)
+    jalr x0, %lo(foo)(x10)
+
+    # This isn't executed
+    li x12, 1
+    ebreak
+
+foo:
+    # This is executed
+    li x12, 2
+    ebreak
+</div>
+<p>What’s the advantage of this over <code>jal x0</code>? Since
+<code>%hi</code> and <code>%lo</code> can represent any 32-bit value,
+this two-instruction combo can jump to any address, free from range
+restrictions. You do need a free scratch register for the high part of
+the address though, but since RISC-V gives you 31 of them, this
+shouldn’t be too much of a problem.</p>
+<h2 id="jump-and-link"><a href="#jump-and-link" class="anchor-link"
+aria-hidden="true">⋄</a>Jump and link</h2>
+<p>What’s the deal with the destination register then? What do you need
+the address of the next instruction for? For jumping <em>back</em> of
+course. We can use this functionality to call functions and return
+back.</p>
+<div class="emulator-disabled">
+    li x10, 1
+    jal x1, double  # Call double
+    jal x1, double  # Call double
+    ebreak
+
+    # Double the value in x10
+double:
+    add x10, x10, x10
+    jr x1           # Return
+</div>
+<p>Note that I used the register <code>x1</code> for this, which is the
+register for providing the return address by convention. For
+convenience, if the destination register is omitted in <code>jal</code>,
+it defaults to <code>x1</code>. Meanwhile, <span
+id="insn-ret"><em><code>ret</code></em></span> is a pseudoinstruction
+that stands for <code>jr x1</code>,
+i.e. <code>jalr x0, 0(x1)</code>:</p>
+<pre><code>jal label
+ret</code></pre>
+<p>So the example above can be rewritten more conveniently as:</p>
+<div class="emulator-disabled">
+    li x10, 1
+    jal foo
+    jal foo
+    ebreak
+
+foo:
+    add x10, x10, x10
+    ret
+</div>
 <h1 id="index">Index</h1>
 <ul>
 <li><a href="#term-align">align</a></li>
@@ -771,11 +911,16 @@ registers</a></li>
 <li><a href="#insn-blt"><code>blt</code></a></li>
 <li><a href="#insn-bltu"><code>bltu</code></a></li>
 <li><a href="#insn-bne"><code>bne</code></a></li>
+<li><a href="#insn-j"><code>j</code></a></li>
+<li><a href="#insn-jal"><code>jal</code></a></li>
+<li><a href="#insn-jalr"><code>jalr</code></a></li>
+<li><a href="#insn-jr"><code>jr</code></a></li>
 <li><a href="#insn-li"><code>li</code></a></li>
 <li><a href="#insn-lui"><code>lui</code></a></li>
 <li><a href="#insn-mv"><code>mv</code></a></li>
 <li><a href="#insn-or"><code>or</code></a></li>
 <li><a href="#insn-ori"><code>ori</code></a></li>
+<li><a href="#insn-ret"><code>ret</code></a></li>
 <li><a href="#insn-sll"><code>sll</code></a></li>
 <li><a href="#insn-slli"><code>slli</code></a></li>
 <li><a href="#insn-slt"><code>slt</code></a></li>
