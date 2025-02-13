@@ -290,7 +290,7 @@ function convertEmulator(el) {
     }
 
     edit.onkeydown = (event) => {
-        if (event.key === 'Tab' && ! event.ctrlKey && ! event.altKey && ! event.altKey && ! event.shiftKey) {
+        if (event.key === 'Tab' && ! event.ctrlKey && ! event.altKey && ! event.metaKey && ! event.shiftKey) {
             const text = edit.value;
 
             const prev = text.lastIndexOf('\n', Math.max(0, edit.selectionStart - 1)) + 1;
@@ -302,14 +302,14 @@ function convertEmulator(el) {
                 document.execCommand('insertText', false, data);
             }
             event.preventDefault();
-        } else if (event.key === 'Enter' && event.shiftKey && ! event.ctrlKey && ! event.altKey && ! event.altKey) {
+        } else if (event.key === 'Enter' && event.shiftKey && ! event.ctrlKey && ! event.altKey && ! event.metaKey) {
             event.preventDefault();
 
             start();
             if (started) {
                 stepBtn.focus();
             }
-        } else if (event.key === 'Enter' && event.ctrlKey && ! event.altKey && ! event.altKey && ! event.shiftKey) {
+        } else if (event.key === 'Enter' && event.ctrlKey && ! event.altKey && ! event.metaKey && ! event.shiftKey) {
             event.preventDefault();
             output.textContent = '';
             start();
