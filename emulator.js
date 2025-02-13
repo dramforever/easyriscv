@@ -103,6 +103,19 @@ export class RiscvState {
         this.instret = [ 0, 0 ];
     }
 
+    dump_state() {
+        return {
+            pc: this.pc,
+            regs: new Uint32Array(this.regs),
+
+            // XXX: There might be an easier way
+            priv: this.priv, mpp: this.mpp, mscratch: this.mscratch,
+            mepc: this.mepc, mcause: this.mcause, mtval: this.mtval,
+            mtvec: this.mtvec,
+            cycle: [... this.cycle], instret: [... this.instret]
+        };
+    }
+
     write_csr(num, value) {
         if (num === 0x300) { // mstatus
             const mpp = (value >> 11) & 0b11;

@@ -93,6 +93,11 @@ pre {
     min-height: 17lh;
 }
 
+.emulator .emulator-regs .field-changed {
+    /* TODO: Color */
+    background-color: antiquewhite;
+}
+
 .emulator .emulator-output {
     grid-column: 1 / 3;
     grid-row: 3;

@@ -129,30 +129,47 @@ function convertEmulator(el) {
     printOnExcCheck.onchange = updateUI;
     updateUI();
 
-    let mem = null, riscv = null, dump = null, runTask = null;
+    let mem = null, riscv = null, dump = null, runTask = null, oldState = null;
 
     const fmt = (x) => `0x${x.toString(16).padStart(8, '0')}`;
 
     function renderRegs() {
-        const lines = [];
+        const newState = riscv.dump_state();
+
+        const parts = [];
         const names = "zero ra sp gp tp t0 t1 t2 s0 s1 a0 a1 a2 a3 a4 a5 a6 a7 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 t3 t4 t5 t6".split(' ');
 
+        const makeField = (str, changed) => {
+            const span = document.createElement('span');
+            span.textContent = str;
+            if (changed)
+                span.classList.add('field-changed');
+            return span;
+        };
+
+        const regFmt = (i) => makeField(fmt(newState.regs[i]), oldState !== null && newState.regs[i] !== oldState.regs[i]);
+        const field = (n) => makeField(`${newState[n]}`, oldState !== null && newState[n] !== oldState[n]);
+        const fieldFmt = (n) => makeField(fmt(newState[n]), oldState !== null && newState[n] !== oldState[n]);
+
         const insn = mem.fetch(riscv.pc);
-        lines.push(`  pc       ${fmt(riscv.pc)} (insn: ${insn === null ? '???' : fmt(insn)})\n`);
+        parts.push(`  pc       ${fmt(newState.pc)} (insn: ${insn === null ? '???' : fmt(insn)})\n`);
+
         for (let i = 0; i < 32; i ++) {
             const end = i % 2 ? '\n' : ' |';
-            lines.push(`${names[i].padStart(4, ' ')} ${`(x${i})`.padStart(5, ' ')} ${fmt(riscv.regs[i])}${end}`);
+            parts.push(`${names[i].padStart(4, ' ')} ${`(x${i})`.padStart(5, ' ')} `, regFmt(i), end);
         }
-        lines.push('\n');
-        lines.push(`(priv) = ${riscv.priv} | mstatus = { MPP = ${riscv.mpp} }\n`);
-        lines.push(`mscratch = ${fmt(riscv.mscratch)} | `);
-        lines.push(`mtvec = ${fmt(riscv.mtvec)}\n`);
-        lines.push(`mepc = ${fmt(riscv.mepc)} | `);
-        lines.push(`mtval = ${fmt(riscv.mtval)}\n`);
-        lines.push(`mcause = ${fmt(riscv.mcause)}\n`);
-        lines.push(`cycle = 0x${riscv.cycle[1].toString(16).padStart(8, '0')}_${riscv.cycle[0].toString(16).padStart(8, '0')}\n`);
-        lines.push(`instret = 0x${riscv.instret[1].toString(16).padStart(8, '0')}_${riscv.instret[0].toString(16).padStart(8, '0')}\n`);
-        regsDisp.textContent = lines.join('');
+        parts.push('\n');
+        parts.push(`(priv) = `, field('priv'),` | mstatus = { MPP = `, field('mpp'),` }\n`);
+        parts.push(`mscratch = `, fieldFmt('mscratch'), ` | `);
+        parts.push(`mtvec = `, fieldFmt('mtvec'), `\n`);
+        parts.push(`mepc = `, fieldFmt('mepc'), ` | `);
+        parts.push(`mtval = `, fieldFmt('mtval'), `\n`);
+        parts.push(`mcause = `, fieldFmt('mcause'), `\n`);
+
+        parts.push(`cycle = 0x${riscv.cycle[1].toString(16).padStart(8, '0')}_${riscv.cycle[0].toString(16).padStart(8, '0')}\n`);
+        parts.push(`instret = 0x${riscv.instret[1].toString(16).padStart(8, '0')}_${riscv.instret[0].toString(16).padStart(8, '0')}\n`);
+
+        regsDisp.replaceChildren(...parts);
     }
 
     function writeOutput(text) {
@@ -192,6 +209,7 @@ function convertEmulator(el) {
         mem = null;
         riscv = null;
         dump = null;
+        oldState = null;
         running = false;
         started = false;
         writeOutput('[ Stopped ]\n')
@@ -220,6 +238,7 @@ function convertEmulator(el) {
         `[ Exception: ${CAUSES.get(res.cause) || "???"} (${res.cause}) | tval = ${fmt(res.tval)}, epc = ${fmt(res.epc)} ]\n`;
 
     function step() {
+        oldState = riscv.dump_state();
         const res = riscv.step();
         renderRegs();
         if (res.type === 'stop') {
@@ -235,6 +254,8 @@ function convertEmulator(el) {
         const LIMIT = 100;
 
         running = true;
+
+        oldState = riscv.dump_state();
 
         for (let count = 0; count < LIMIT; count ++) {
             const res = riscv.step();
