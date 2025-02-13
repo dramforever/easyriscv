@@ -770,8 +770,11 @@ the following instruction, and then jumps to the address at
 <code>(imm + rs1) &amp; ~1</code>, i.e. the least significant bit is
 cleared. This distinction won’t come up in normal code, like, pretty
 much ever.)</p>
-<p>That was… a lot. Let’s take on some simpler cases first: If
-<code>rd</code> is <code>x0</code> then the only thing these
+<p>Eesh, that’s some funky looking syntax. When you see parentheses like
+this, it has something to do with an <em>address</em>. Parens means
+address.</p>
+<p>That’s… still a lot going on. Let’s take on some simpler cases first:
+If <code>rd</code> is <code>x0</code> then the only thing these
 instructions do is jumping. We can use it instead of the branch
 instructions for an unconditional jump.</p>
 <div class="emulator-disabled">
@@ -874,26 +877,229 @@ foo:
     add x10, x10, x10
     ret
 </div>
+<h2 id="memory"><a href="#memory" class="anchor-link"
+aria-hidden="true">⋄</a>Memory</h2>
+<p>That’s a nice computer we have here. Now we have… all of 31 × 4 = 124
+bytes of storage in the form of registers to work with. I want more…</p>
+<h3 id="basic-memory-accesses">Basic memory accesses</h3>
+<p>The emulator has 1 MiB of memory starting at address
+<code>0x4000_0000</code>. That’s <code>0x4000_0000</code> to
+<code>0x400f_ffff</code>, inclusive. The assembler starts assembling at
+the beginning of memory, as you can see in the dump, starting at address
+<code>0x4000_0000</code>.</p>
+<p>The <span id="dir-.word"><em><code>.word</code></em></span> <span
+id="term-directive"><em>directive</em></span> straight up puts a
+4-byte/32-bit word into the current position. You can specify multiple
+values separated by commas.</p>
+<pre><code>.word value [ , value [ , ...  ] ]</code></pre>
+<p>The <span id="insn-lw"><em><code>lw</code></em></span> (“load word”)
+instruction loads a word from the address <code>rs1 + imm</code> and
+puts it in <code>rd</code>, in other words it reads the word from
+memory:</p>
+<pre><code>lw rd, imm(rs1)</code></pre>
+<p>As with <code>jalr</code>, you can combine it with <code>lui</code>
+to access any address.</p>
+<div class="emulator-disabled">
+    lui x10, %hi(foo)
+    lw x11, %lo(foo)(x10)
+    ebreak
+
+foo:
+    # Get it? foo, f00 ...
+    .word 0xf00
+</div>
+<p>The <span id="insn-sw"><em><code>sw</code></em></span> (“store word”)
+instruction stores <code>rs2</code> to a word in memory at address
+<code>rs2 + imm</code>, in other words it writes the word to memory:</p>
+<pre><code>sw rs2, imm(rs1)</code></pre>
+<div class="emulator-disabled">
+    lui x10, %hi(foo)
+    lw x11, %lo(foo)(x10)
+
+    li x12, 0x123
+    sw x12, %lo(foo)(x10)
+
+    # Now it's changed
+    lw x13, %lo(foo)(x10)
+    ebreak
+
+foo:
+    .word 0xf00
+</div>
+<p>Just to make absolutely sure we’re clear on this, <span
+id="term-load"><em>load</em></span> means reading from memory, <span
+id="term-store"><em>store</em></span> means writing to memory. Both
+words can be nouns and verbs. Also, a <span
+id="term-word"><em>word</em></span> is 32-bit for RISC-V.</p>
+<p>Let’s have some fun. Can we have the program read itself?</p>
+<div class="emulator-disabled">
+here:
+    lui x10, %hi(here)
+    lw x10, %lo(here)(x10)
+    ebreak
+</div>
+<p>Ohh that’s fun. Does this mean I can also write programs with just
+<code>.word</code>?</p>
+<div class="emulator-disabled">
+    .word 0x40000537 # lui x10, %hi(here)
+    .word 0x00052503 # lw x10, %lo(here)(x10)
+    .word 0x00100073 # ebreak
+</div>
+<p>Oh that’s nice. Just a peek into the world of machine code and
+instruction encodings… which we will not be getting into.</p>
+<p>With memory accesses under our belt, we can address a lot more data
+easily. Here’s an example where we find the sum of all the values in an
+array. Note how we can access different addresses of memory, whereas
+there is no way to address a register by a number in another
+register.</p>
+<div class="emulator-disabled">
+    lui x10, %hi(array)
+    addi x10, x10, %lo(array)
+
+    li x11, 8   # length
+
+    # Get end address
+    slli x11, x11, 2
+    add x11, x11, x10
+
+    li x12, 0 # sum
+
+loop:
+    # If current == end, done
+    beq x10, x11, end
+    lw x13, 0(x10)      # Load from array
+    add x12, x12, x13   # Add to sum
+    addi x10, x10, 4    # Bump current pointer
+    j loop
+
+end:
+    ebreak
+
+
+array:
+    .word 13, 24, 6, 7, 8, 19, 0, 4
+</div>
+<p>The equivalent in C would be something like</p>
+<pre><code>uint32_t array[], length;
+
+uint32_t *current = array;
+uint32_t *end = array + length;
+uint32_t sum = 0;
+
+for (; current != end; current ++) {
+    sum += *current;
+}</code></pre>
+<p>Note how adding one to a pointer to word bumps the address by 4,
+because the addresses are all byte addresses, and one word is four
+bytes. In C, the compiler handles the multiplier for you, but in
+assembly you have to remember to do it manually.</p>
+<!-- TODO: I need some memory dump thing to make useful examples of `sw` -->
+<h3 id="smaller-widths">Smaller widths</h3>
+<p>Not everything in memory is word sized. You’ve already seen an array,
+which is multiple-word-sized. There are also stuff smaller than
+word-sized.</p>
+<p>An obvious one is the <span id="term-byte"><em>byte</em></span>,
+which is, well, 1-byte/8-bit and written <code>[u]int8_t</code> in C. In
+the middle is the <span id="term-halfword"><em>halfword</em></span>,
+which is 2-byte/16-bit and written <code>[u]int16_t</code> in C. You can
+use the directives <span
+id="dir-.byte"><em><code>.byte</code></em></span> and <span
+id="dir-.half"><em><code>.half</code></em></span> for those
+respectively.</p>
+<pre><code>.byte value [ , value [ , ...  ] ]
+.half value [ , value [ , ...  ] ]</code></pre>
+<p>And just in case you don’t remember those, <span
+id="dir-.2byte"><em><code>.2byte</code></em></span> means the same as
+<code>.half</code>, and <span
+id="dir-.4byte"><em><code>.4byte</code></em></span> means the same as
+<code>.word</code>.</p>
+<pre><code>.2byte value [ , value [ , ...  ] ] # Same as .half
+.4byte value [ , value [ , ...  ] ] # Same as .word</code></pre>
+<p>There’s a small problem with loading smaller-than-word sized values
+into word-sized registers: What do you do with the rest of the bits?
+Obviously the lowest of the bits gets the actual value loaded. There are
+two most useful ways to fill the upper bits:</p>
+<ul>
+<li><span id="term-zero-extension"><em>zero extension</em></span>: The
+higher bits are filled with zeros</li>
+<li><span id="term-sign-extension"><em>sign extension</em></span>: The
+higher bits are filled with copies of the highest bit of the original
+value</li>
+</ul>
+<p>Zero extension is easy enough. As the name suggests, sign extension
+has something to do with signed values. It’s what happens when you
+convert a narrower signed value into a wider one.</p>
+<p>(Keeping the rest of the bits unchanged isn’t a good option. It
+complicates the implementation for processor, especially of modern high
+performance design, to just write parts of a register. It would be
+easiest if the new value didn’t depend on the old value.)</p>
+<p>For example, the signed byte value <code>-100</code> is
+<code>0x9c</code>. Since the highest bit i.e. the sign bit of it is
+<code>1</code>, when we expand it into 32 bits we fill the high 24 bits
+with one so the new value, <code>0xffff_ff9c</code> still represents
+<code>-100</code>. This is sign extension.</p>
+<p>If we want to convert the unsigned byte value <code>156</code>, still
+<code>0x9c</code>, into an unsigned word, it would have to be
+<code>0x0000_009c</code> to preserve its value.</p>
+<p>For bytes, the <span id="insn-lb"><em><code>lb</code></em></span>
+(“load byte”) instruction loads a byte and sign extends the result, and
+the <span id="insn-lbu"><em><code>lbu</code></em></span> (“load byte
+unsigned”) instruction does the same but zero extends the result. As
+with <code>lw</code>, the address is <code>rs1 + imm</code>.</p>
+<pre><code>lb rd, imm(rs1)
+lbu rd, imm(rs1)</code></pre>
+<p>Similarly for <span id="insn-lh"><em><code>lh</code></em></span>
+(“load half”) and <span id="insn-lhu"><em><code>lhu</code></em></span>
+(“load half unsigned”), just for unsigned halfwords:</p>
+<pre><code>lh rd, imm(rs1)
+lhu rd, imm(rs1)</code></pre>
+<p>We can try out the sign extension and zero extension example from
+earlier.</p>
+<div class="emulator-disabled">
+    # Signed
+    li x10, -100
+    lui x11, %hi(test)
+    lb x11, %lo(test)(x11)
+
+    # Unsigned
+    li x12, 156
+    lui x13, %hi(test)
+    lbu x13, %lo(test)(x13)
+
+    ebreak
+
+test:
+    .byte 0x9c
+</div>
+<h3 id="memory-mapped-io">Memory-mapped I/O</h3>
 <h1 id="index">Index</h1>
 <ul>
 <li><a href="#term-align">align</a></li>
 <li><a href="#term-branch">branch</a></li>
+<li><a href="#term-byte">byte</a></li>
 <li><a href="#term-destination-register">destination register</a></li>
+<li><a href="#term-directive">directive</a></li>
 <li><a href="#term-extensions">extensions</a></li>
 <li><a href="#term-general-purpose-registers">general purpose
 registers</a></li>
+<li><a href="#term-halfword">halfword</a></li>
 <li><a href="#term-imm"><code>imm</code></a></li>
 <li><a href="#term-immediate-value">immediate value</a></li>
 <li><a href="#term-instruction-syntax">instruction syntax</a></li>
 <li><a href="#term-jump">jump</a></li>
+<li><a href="#term-load">load</a></li>
 <li><a href="#term-pc"><code>pc</code></a></li>
 <li><a href="#term-program-counter">program counter</a></li>
 <li><a href="#term-pseudoinstructions">pseudoinstructions</a></li>
 <li><a href="#term-rd"><code>rd</code></a></li>
 <li><a href="#term-rs1"><code>rs1</code></a></li>
 <li><a href="#term-rs2"><code>rs2</code></a></li>
+<li><a href="#term-sign-extension">sign extension</a></li>
 <li><a href="#term-source-register">source register</a></li>
+<li><a href="#term-store">store</a></li>
 <li><a href="#term-two’s-complement">two’s complement</a></li>
+<li><a href="#term-word">word</a></li>
+<li><a href="#term-zero-extension">zero extension</a></li>
 </ul>
 <ul>
 <li><a href="#reg-x0"><code>x0</code></a></li>
@@ -915,8 +1121,13 @@ registers</a></li>
 <li><a href="#insn-jal"><code>jal</code></a></li>
 <li><a href="#insn-jalr"><code>jalr</code></a></li>
 <li><a href="#insn-jr"><code>jr</code></a></li>
+<li><a href="#insn-lb"><code>lb</code></a></li>
+<li><a href="#insn-lbu"><code>lbu</code></a></li>
+<li><a href="#insn-lh"><code>lh</code></a></li>
+<li><a href="#insn-lhu"><code>lhu</code></a></li>
 <li><a href="#insn-li"><code>li</code></a></li>
 <li><a href="#insn-lui"><code>lui</code></a></li>
+<li><a href="#insn-lw"><code>lw</code></a></li>
 <li><a href="#insn-mv"><code>mv</code></a></li>
 <li><a href="#insn-or"><code>or</code></a></li>
 <li><a href="#insn-ori"><code>ori</code></a></li>
@@ -932,6 +1143,14 @@ registers</a></li>
 <li><a href="#insn-srl"><code>srl</code></a></li>
 <li><a href="#insn-srli"><code>srli</code></a></li>
 <li><a href="#insn-sub"><code>sub</code></a></li>
+<li><a href="#insn-sw"><code>sw</code></a></li>
 <li><a href="#insn-xor"><code>xor</code></a></li>
 <li><a href="#insn-xori"><code>xori</code></a></li>
+</ul>
+<ul>
+<li><a href="#dir-.2byte"><code>.2byte</code></a></li>
+<li><a href="#dir-.4byte"><code>.4byte</code></a></li>
+<li><a href="#dir-.byte"><code>.byte</code></a></li>
+<li><a href="#dir-.half"><code>.half</code></a></li>
+<li><a href="#dir-.word"><code>.word</code></a></li>
 </ul>

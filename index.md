@@ -827,9 +827,12 @@ jalr rd, imm(rs1)
 significant bit is cleared. This distinction won't come up in normal code, like,
 pretty much ever.)
 
-That was... a lot. Let's take on some simpler cases first: If `rd` is `x0` then
-the only thing these instructions do is jumping. We can use it instead of the
-branch instructions for an unconditional jump.
+Eesh, that's some funky looking syntax. When you see parentheses like this, it
+has something to do with an *address*. Parens means address.
+
+That's... still a lot going on. Let's take on some simpler cases first: If `rd`
+is `x0` then the only thing these instructions do is jumping. We can use it
+instead of the branch instructions for an unconditional jump.
 
 ```emulator
 loop:
@@ -945,6 +948,238 @@ foo:
     ret
 ```
 
+## Memory
+
+That's a nice computer we have here. Now we have... all of 31 &times; 4 = 124
+bytes of storage in the form of registers to work with. I want more...
+
+### Basic memory accesses
+
+The emulator has 1 MiB of memory starting at address `0x4000_0000`. That's
+`0x4000_0000` to `0x400f_ffff`, inclusive. The assembler starts assembling at
+the beginning of memory, as you can see in the dump, starting at address
+`0x4000_0000`.
+
+The [`.word`]{x=dir} [directive]{x=term} straight up puts a 4-byte/32-bit word
+into the current position. You can specify multiple values separated by commas.
+
+```
+.word value [ , value [ , ...  ] ]
+```
+
+The [`lw`]{x=insn} ("load word") instruction loads a word from the address `rs1
++ imm` and puts it in `rd`, in other words it reads the word from memory:
+
+```
+lw rd, imm(rs1)
+```
+
+As with `jalr`, you can combine it with `lui` to access any address.
+
+```emulator
+    lui x10, %hi(foo)
+    lw x11, %lo(foo)(x10)
+    ebreak
+
+foo:
+    # Get it? foo, f00 ...
+    .word 0xf00
+```
+
+The [`sw`]{x=insn} ("store word") instruction stores `rs2` to a word in memory
+at address `rs2 + imm`, in other words it writes the word to memory:
+
+```
+sw rs2, imm(rs1)
+```
+
+```emulator
+    lui x10, %hi(foo)
+    lw x11, %lo(foo)(x10)
+
+    li x12, 0x123
+    sw x12, %lo(foo)(x10)
+
+    # Now it's changed
+    lw x13, %lo(foo)(x10)
+    ebreak
+
+foo:
+    .word 0xf00
+```
+
+Just to make absolutely sure we're clear on this, [load]{x=term} means reading
+from memory, [store]{x=term} means writing to memory. Both words can be nouns
+and verbs. Also, a [word]{x=term} is 32-bit for RISC-V.
+
+Let's have some fun. Can we have the program read itself?
+
+```emulator
+here:
+    lui x10, %hi(here)
+    lw x10, %lo(here)(x10)
+    ebreak
+```
+
+Ohh that's fun. Does this mean I can also write programs with just `.word`?
+
+```emulator
+    .word 0x40000537 # lui x10, %hi(here)
+    .word 0x00052503 # lw x10, %lo(here)(x10)
+    .word 0x00100073 # ebreak
+```
+
+Oh that's nice. Just a peek into the world of machine code and instruction
+encodings... which we will not be getting into.
+
+With memory accesses under our belt, we can address a lot more data easily.
+Here's an example where we find the sum of all the values in an array. Note how
+we can access different addresses of memory, whereas there is no way to address
+a register by a number in another register.
+
+```emulator
+    lui x10, %hi(array)
+    addi x10, x10, %lo(array)
+
+    li x11, 8   # length
+
+    # Get end address
+    slli x11, x11, 2
+    add x11, x11, x10
+
+    li x12, 0 # sum
+
+loop:
+    # If current == end, done
+    beq x10, x11, end
+    lw x13, 0(x10)      # Load from array
+    add x12, x12, x13   # Add to sum
+    addi x10, x10, 4    # Bump current pointer
+    j loop
+
+end:
+    ebreak
+
+
+array:
+    .word 13, 24, 6, 7, 8, 19, 0, 4
+```
+
+The equivalent in C would be something like
+
+```
+uint32_t array[], length;
+
+uint32_t *current = array;
+uint32_t *end = array + length;
+uint32_t sum = 0;
+
+for (; current != end; current ++) {
+    sum += *current;
+}
+```
+
+Note how adding one to a pointer to word bumps the address by 4, because the
+addresses are all byte addresses, and one word is four bytes. In C, the compiler
+handles the multiplier for you, but in assembly you have to remember to do it
+manually.
+
+<!-- TODO: I need some memory dump thing to make useful examples of `sw` -->
+
+### Smaller widths
+
+Not everything in memory is word sized. You've already seen an array, which is
+multiple-word-sized. There are also stuff smaller than word-sized.
+
+An obvious one is the [byte]{x=term}, which is, well, 1-byte/8-bit and written
+`[u]int8_t` in C. In the middle is the [halfword]{x=term}, which is
+2-byte/16-bit and written `[u]int16_t` in C. You can use the directives
+[`.byte`]{x=dir} and [`.half`]{x=dir} for those respectively.
+
+```
+.byte value [ , value [ , ...  ] ]
+.half value [ , value [ , ...  ] ]
+```
+
+And just in case you don't remember those, [`.2byte`]{x=dir} means the same as
+`.half`, and [`.4byte`]{x=dir} means the same as `.word`.
+
+```
+.2byte value [ , value [ , ...  ] ] # Same as .half
+.4byte value [ , value [ , ...  ] ] # Same as .word
+```
+
+There's a small problem with loading smaller-than-word sized values into
+word-sized registers: What do you do with the rest of the bits? Obviously the
+lowest of the bits gets the actual value loaded. There are two most useful ways
+to fill the upper bits:
+
+- [zero extension]{x=term}: The higher bits are filled with zeros
+- [sign extension]{x=term}: The higher bits are filled with copies of the
+  highest bit of the original value
+
+Zero extension is easy enough. As the name suggests, sign extension has
+something to do with signed values. It's what happens when you convert a
+narrower signed value into a wider one.
+
+(Keeping the rest of the bits unchanged isn't a good option. It complicates the
+implementation for processor, especially of modern high performance design, to
+just write parts of a register. It would be easiest if the new value didn't
+depend on the old value.)
+
+For example, the signed byte value `-100` is `0x9c`. Since the highest bit i.e.
+the sign bit of it is `1`, when we expand it into 32 bits we fill the high 24
+bits with one so the new value, `0xffff_ff9c` still represents `-100`. This is
+sign extension.
+
+If we want to convert the unsigned byte value `156`, still `0x9c`, into an
+unsigned word, it would have to be `0x0000_009c` to preserve its value.
+
+For bytes, the [`lb`]{x=insn} ("load byte") instruction loads a byte and sign
+extends the result, and the [`lbu`]{x=insn} ("load byte unsigned") instruction
+does the same but zero extends the result. As with `lw`, the address is `rs1 + imm`.
+
+```
+lb rd, imm(rs1)
+lbu rd, imm(rs1)
+```
+
+Similarly for [`lh`]{x=insn} ("load half") and [`lhu`]{x=insn} ("load half
+unsigned"), just for unsigned halfwords:
+
+
+```
+lh rd, imm(rs1)
+lhu rd, imm(rs1)
+```
+
+We can try out the sign extension and zero extension example
+from earlier.
+
+```emulator
+    # Signed
+    li x10, -100
+    lui x11, %hi(test)
+    lb x11, %lo(test)(x11)
+
+    # Unsigned
+    li x12, 156
+    lui x13, %hi(test)
+    lbu x13, %lo(test)(x13)
+
+    ebreak
+
+test:
+    .byte 0x9c
+```
+
+Now you can try translating some basic C code into RISC-V assembly. Functions
+are... still out of the questions for now. Variables have to be either global or
+put in registers.
+
+### Memory-mapped I/O
+
+
 # Index
 
 ::: {index_of=term}
@@ -954,4 +1189,7 @@ foo:
 :::
 
 ::: {index_of=insn}
+:::
+
+::: {index_of=dir}
 :::
