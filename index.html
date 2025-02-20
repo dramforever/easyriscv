@@ -61,7 +61,8 @@ cover here.</p>
 <p>Speaking of instructions we will cover, why don’t we meet the 45 of
 them right here and now:</p>
 <!-- TODO: Ordering? -->
-<pre><code>lui auipc jal jalr
+<pre><code>lui auipc
+jal jalr
 beq bne blt bge bltu bgeu
 lb lh lw lbu lhu sb sh sw
 addi slti sltiu xori ori andi slli srli srai
@@ -813,6 +814,9 @@ foo:
     li x12, 2
     ebreak
 </div>
+<p>In case you forgot by now, the <code>lui</code>/<code>addi</code>
+combo at the start puts the address of the label <code>foo</code> in
+register <code>x10</code>.</p>
 <p>Similar to <code>j</code>, <span
 id="insn-jr"><em><code>jr</code></em></span> is a psuedoinstruction for
 <code>jalr</code> with <code>rd</code> being <code>x0</code> and
@@ -1071,14 +1075,278 @@ earlier.</p>
 test:
     .byte 0x9c
 </div>
+<p>While we’re at it, here’s two more minor details. Firstly, <span
+id="term-endianness"><em>endianness</em></span>. While theoretically big
+endian RISC-V machines can exist, I’ve never seen one… and this emulator
+is little endian, meaning that the four bytes in a word are laid out in
+memory lowest first. So, <code>.byte 0x1, 0x2, 0x3, 0x4</code> would be
+the same as <code>.word 0x04030201</code>.</p>
+<div class="emulator-disabled">
+    lui x10, %hi(test)
+    lw x10, %lo(test)(x10)
+    ebreak
+
+test:
+    .byte 0x1, 0x2, 0x3, 0x4
+</div>
+<p>Secondly, memory accesses should be <span
+id="term-aligned"><em>aligned</em></span> for maximum efficiency. This
+means that the address for a halfword/2byte should be a multiple of two,
+and the address for a word/4byte should be a multiple of four.
+Misaligned accesses (meaning, well, when the address is not aligned) may
+not work as expected.</p>
+<p>For user programs running on a rich operating systems, misaligned
+accesses are supported but may be slow. In embedded application running
+on microcontrollers and such, it might not work at all.</p>
+<p>This emulator supports misaligned memory accesses.</p>
+<div class="emulator-disabled">
+    lui x10, %hi(test)
+    addi x10, x10, %lo(test)
+
+    lw x11, 0(x10)
+    lw x12, 1(x10)
+    lw x13, 3(x10)
+
+.test
+    .byte 1, 2, 3, 4, 5, 6, 7, 8
+</div>
+<p>Now you can try translating some basic C code into RISC-V assembly.
+Functions are… still out of the questions for now. Variables have to be
+either global or put in registers. What else are we missing…</p>
 <h3 id="memory-mapped-io">Memory-mapped I/O</h3>
+<p>Is it Hello World time? I think it’s Hello World time…</p>
+<p>For a computer to not just be a space heater, we need some way for it
+to at least generate output and take input. While other architectures
+may have dedicated I/O instructions, RISC-V uses <span
+id="term-memory-mapped-i/o"><em>memory mapped I/O</em></span>.
+Essentially, this means that loads and stores to special addresses
+communicate with other <span id="term-devices"><em>devices</em></span>.
+They do not work like normal memory, and you should only use the
+supported widths to access them.</p>
+<p>One output device we have here is at address
+<code>0x1000_0000</code>. Any 32-bit writes to it appends the lowest 8
+bits as a byte to the text in the output pane. In other words, a
+<code>sw</code> to that address writes a byte of output.</p>
+<p>(The output pane uses UTF-8 encoding.)</p>
+<!-- TODO: Uhh... Make the assembler support character and string literals? -->
+<div class="emulator-disabled">
+    lui x11, %hi(0x10000000)
+    li x10, 0x48 # 'H'
+    sw x10, 0(x11)
+    li x10, 0x69 # 'i'
+    sw x10, 0(x11)
+    li x10, 0x21 # '!'
+    sw x10, 0(x11)
+    li x10, 0x0a # '\n'
+    sw x10, 0(x11)
+    ebreak
+</div>
+<p>Eh, close enough to a greeting the entire world. We could refactor it
+a bit to use a loop, or whatever… Now that we think about it, how about
+going one step further and organize our code into some functions?</p>
+<h2 id="functions"><a href="#functions" class="anchor-link"
+aria-hidden="true">⋄</a>Functions</h2>
+<p>We already know how to call a function and return back. Namely,
+<code>jal</code> calls a function, and <code>ret</code> returns. Usually
+functions take arguments, uses local variables, and returns results.
+Since there’s no real difference between the 31 general purpose
+registers, on account of them being, well, general purpose, we could
+just use any of them as we wish. Or we could follow the standard
+conventions.</p>
+<h3 id="register-aliases-and-calling-conventions">Register aliases and
+calling conventions</h3>
+<p>This whole time you probably have noticed that registers are listed
+with two names each, and indeed both work identically in assembly.</p>
+<div class="emulator-disabled">
+    li x10, 1
+    li a0, 1
+    ebreak
+</div>
+<p>These <span id="term-register-aliases"><em>register
+aliases</em></span> are named after their uses:</p>
+<ul>
+<li><span id="regalias-s0-through-s11"><em><code>s0</code> through
+<code>s11</code></em></span> are <em>saved</em> registers</li>
+<li><span id="regalias-t0-through-t6"><em><code>t0</code> through
+<code>t6</code></em></span> are <em>temporary</em> registers</li>
+<li><span id="regalias-a0-through-a7"><em><code>a0</code> through
+<code>a7</code></em></span> are <em>argument</em> registers</li>
+<li><span id="regalias-zero"><em><code>zero</code></em></span> is the,
+well, zero register</li>
+<li><span id="regalias-ra"><em><code>ra</code></em></span> is for the
+return address, by convention, as we’ve seen</li>
+<li><span id="regalias-sp"><em><code>sp</code></em></span> … we’ll talk
+about <code>sp</code> later</li>
+<li>(The use of <span id="regalias-tp"><em><code>tp</code></em></span>
+and <span id="regalias-gp"><em><code>gp</code></em></span> is out of the
+scope of this document.)</li>
+</ul>
+<p>(Yeah it’s… all placed in a weird order… don’t mind…)</p>
+<p>When you call a function, you put up to eight arguments in the… well,
+argument registers, in the order <code>a0</code>, <code>a1</code>, …,
+<code>a7</code>. After that you use <code>jal</code> or something, which
+puts the return address in <code>ra</code>, and jumps to the
+function.</p>
+<p>Inside, the function, if it wishes to use the <span
+id="term-call-saved"><em>call-saved</em></span> registers
+<code>s0</code> through <code>s11</code>, it must save their values at
+the start of the function, and restore them before returning. The non
+call-saved registers <code>a0</code> through <code>a7</code>,
+<code>t0</code> through <code>t6</code> and <code>ra</code> may be
+modified without restoring their values.</p>
+<p>When the called function is done, it would, as mentioned, restore any
+used call-saved registers, and jump back to the return address, resuming
+the calling code.</p>
+<p>Here’s a basic-ish example:</p>
+<pre><code>int memcmp(const void *a, const void *b, size_t n)</code></pre>
+<p>The parameter <code>a</code> is passed in <code>a0</code>,
+<code>b</code> is passed in <code>a1</code>, and <code>n</code> is
+passed in <code>a2</code>. The return value will be in <code>a0</code>.
+Here’s an implementation and test run:</p>
+<div class="emulator-disabled">
+    # memcmp(test1, test2, 4)
+
+    lui a0, %hi(test1)
+    addi a0, a0, %lo(test1)
+    lui a1, %hi(test2)
+    addi a1, a1, %lo(test2)
+    li a2, 4
+    jal memcmp
+    ebreak
+
+memcmp:
+    add a3, a0, a2 # a3 = a + n
+    li t0, 0
+
+memcmp_loop:
+    beq a0, a3, memcmp_done # No more bytes
+
+    lb t0, 0(a0)
+    lb t1, 0(a1)
+    sub t0, t0, t1  # t0 = *a - *b
+
+    bne t0, zero, memcmp_done # If different, done
+
+    addi a0, a0, 1  # a ++
+    addi a1, a1, 1  # b ++
+
+    j memcmp_loop
+
+memcmp_done:
+    mv a0, t0
+    ret
+
+test1:
+    .byte 1, 2, 3, 4
+test2:
+    .byte 1, 2, 2, 4
+</div>
+<p>Here’s a slightly better-organized “Hello World”, using a
+<code>puts</code> function:</p>
+<div class="emulator-disabled">
+    lui a0, %hi(msg)
+    addi a0, a0, %lo(msg)
+    jal puts
+    ebreak
+
+    # void puts(const char *)
+puts:
+    lui t1, %hi(0x10000000)
+puts_loop:
+    lb t0, 0(a0)
+    beq t0, zero, puts_done
+    sw t0, 0(t1)
+    addi a0, a0, 1
+    j puts_loop
+
+puts_done:
+    ret
+
+msg:
+    .byte 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77
+    .byte 0x6f, 0x72, 0x6c, 0x64, 0x21, 0x0a, 0x00
+</div>
+<h3 id="the-stack">The stack</h3>
+<p>Although we can write some very basic functions now, there are still
+a few problems:</p>
+<ul>
+<li>You can’t call a function within another function because if you do
+so <code>ra</code> would be overwritten, and then you can’t return back
+from the outer function anymore.</li>
+<li>We still don’t know how “saving” registers work.</li>
+</ul>
+<p>Clearly, both would require using the memory somehow. We can feed two
+birds with one scone by using memory in a structured way: The <span
+id="term-stack"><em>stack</em></span>.</p>
+<p>Unlike some other architectures, the <code>sp</code> register is not
+really special in any way. But just like how we can designate how
+<code>a0</code> is used, we can have some conventions about how
+<code>sp</code> is supposed to be used:</p>
+<ul>
+<li>The register is call-saved, which means that when you return from a
+function, <code>sp</code> needs to have the same value as when the
+function was entered</li>
+<li><code>sp</code> <em>always</em> points to somewhere in an area of
+memory called the “stack”, and it is <em>always</em> 16-byte
+aligned.</li>
+</ul>
+<p>And, for the stack itself:</p>
+<ul>
+<li>On RISC-V, the stack grows to lower addresses, meaning that the
+memory where <code>address &gt;= sp</code> are “in the stack”, and
+<code>address &lt; sp</code> are free space that the stack can grow
+into.</li>
+<li>Code can allocate space on the stack by decrementing
+<code>sp</code>, and deallocate space by incrementing <code>sp</code>.
+Of course, allocations and deallocations must be balanced properly.</li>
+<li>You can only freely use space that you have allocated.</li>
+</ul>
+<p>An example is in order. Let’s say you have a function
+<code>foo</code> which just calls <code>bar</code> twice.</p>
+<pre><code>void foo() {
+    bar();
+    bar();
+}</code></pre>
+<p>Inside <code>foo</code>, it would need to save the initial
+<code>ra</code>, so it can return back later. Even though
+<code>ra</code> takes only 4 bytes, <code>sp</code> needs to be 16-byte
+aligned at all times, so we round that up to 16 bytes. Decrementing
+<code>sp</code> by 16 we allocate the space:</p>
+<pre><code>foo:
+    addi sp, sp, -16</code></pre>
+<p>Now, in addition to all of the non call-saved registers, we have 16
+bytes of scratch space at <code>sp</code> through <code>sp + 15</code>.
+We can backup the value of <code>ra</code> here</p>
+<pre><code>    ...
+    sw ra, 0(sp)</code></pre>
+<p>Then we just call <code>bar</code> twice, which overwrites
+<code>ra</code>:</p>
+<pre><code>    ...
+    jal bar
+    jal bar</code></pre>
+<p>At the end of the function, we just need to get back the return
+address, deallocate the stack space, and return. Although using any
+register would suffice for the return address, since it is the backed up
+value of <code>ra</code> after all, we load it back to
+<code>ra</code>.</p>
+<pre><code>    ...
+    lw ra, 0(sp)
+    addi sp, sp, 16
+    ret</code></pre>
+<h2 id="intermission-position-independence"><a
+href="#intermission-position-independence" class="anchor-link"
+aria-hidden="true">⋄</a>Intermission: Position independence</h2>
 <h1 id="index">Index</h1>
 <ul>
 <li><a href="#term-align">align</a></li>
+<li><a href="#term-aligned">aligned</a></li>
 <li><a href="#term-branch">branch</a></li>
 <li><a href="#term-byte">byte</a></li>
+<li><a href="#term-call-saved">call-saved</a></li>
 <li><a href="#term-destination-register">destination register</a></li>
+<li><a href="#term-devices">devices</a></li>
 <li><a href="#term-directive">directive</a></li>
+<li><a href="#term-endianness">endianness</a></li>
 <li><a href="#term-extensions">extensions</a></li>
 <li><a href="#term-general-purpose-registers">general purpose
 registers</a></li>
@@ -1088,14 +1356,17 @@ registers</a></li>
 <li><a href="#term-instruction-syntax">instruction syntax</a></li>
 <li><a href="#term-jump">jump</a></li>
 <li><a href="#term-load">load</a></li>
+<li><a href="#term-memory-mapped-i/o">memory mapped I/O</a></li>
 <li><a href="#term-pc"><code>pc</code></a></li>
 <li><a href="#term-program-counter">program counter</a></li>
 <li><a href="#term-pseudoinstructions">pseudoinstructions</a></li>
 <li><a href="#term-rd"><code>rd</code></a></li>
+<li><a href="#term-register-aliases">register aliases</a></li>
 <li><a href="#term-rs1"><code>rs1</code></a></li>
 <li><a href="#term-rs2"><code>rs2</code></a></li>
 <li><a href="#term-sign-extension">sign extension</a></li>
 <li><a href="#term-source-register">source register</a></li>
+<li><a href="#term-stack">stack</a></li>
 <li><a href="#term-store">store</a></li>
 <li><a href="#term-two’s-complement">two’s complement</a></li>
 <li><a href="#term-word">word</a></li>
@@ -1105,6 +1376,19 @@ registers</a></li>
 <li><a href="#reg-x0"><code>x0</code></a></li>
 <li><a href="#reg-x1-through-x31"><code>x1</code> through
 <code>x31</code></a></li>
+</ul>
+<ul>
+<li><a href="#regalias-a0-through-a7"><code>a0</code> through
+<code>a7</code></a></li>
+<li><a href="#regalias-gp"><code>gp</code></a></li>
+<li><a href="#regalias-ra"><code>ra</code></a></li>
+<li><a href="#regalias-s0-through-s11"><code>s0</code> through
+<code>s11</code></a></li>
+<li><a href="#regalias-sp"><code>sp</code></a></li>
+<li><a href="#regalias-t0-through-t6"><code>t0</code> through
+<code>t6</code></a></li>
+<li><a href="#regalias-tp"><code>tp</code></a></li>
+<li><a href="#regalias-zero"><code>zero</code></a></li>
 </ul>
 <ul>
 <li><a href="#insn-add"><code>add</code></a></li>

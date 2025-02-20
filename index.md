@@ -73,7 +73,8 @@ here and now:
 <!-- TODO: Ordering? -->
 
 ```
-lui auipc jal jalr
+lui auipc
+jal jalr
 beq bne blt bge bltu bgeu
 lb lh lw lbu lhu sb sh sw
 addi slti sltiu xori ori andi slli srli srai
@@ -875,6 +876,8 @@ foo:
     ebreak
 ```
 
+In case you forgot by now, the `lui`/`addi` combo at the start puts the address
+of the label `foo` in register `x10`.
 
 Similar to `j`, [`jr`]{x=insn} is a psuedoinstruction for `jalr` with `rd` being
 `x0` and `imm` being `0`:
@@ -1147,14 +1150,12 @@ lbu rd, imm(rs1)
 Similarly for [`lh`]{x=insn} ("load half") and [`lhu`]{x=insn} ("load half
 unsigned"), just for unsigned halfwords:
 
-
 ```
 lh rd, imm(rs1)
 lhu rd, imm(rs1)
 ```
 
-We can try out the sign extension and zero extension example
-from earlier.
+We can try out the sign extension and zero extension example from earlier.
 
 ```emulator
     # Signed
@@ -1173,12 +1174,286 @@ test:
     .byte 0x9c
 ```
 
+While we're at it, here's two more minor details. Firstly, [endianness]{x=term}.
+While theoretically big endian RISC-V machines can exist, I've never seen one...
+and this emulator is little endian, meaning that the four bytes in a word are
+laid out in memory lowest first. So, `.byte 0x1, 0x2, 0x3, 0x4` would be the
+same as `.word 0x04030201`.
+
+```emulator
+    lui x10, %hi(test)
+    lw x10, %lo(test)(x10)
+    ebreak
+
+test:
+    .byte 0x1, 0x2, 0x3, 0x4
+```
+
+Secondly, memory accesses should be [aligned]{x=term} for maximum efficiency.
+This means that the address for a halfword/2byte should be a multiple of two,
+and the address for a word/4byte should be a multiple of four. Misaligned
+accesses (meaning, well, when the address is not aligned) may not work as
+expected.
+
+For user programs running on a rich operating systems, misaligned accesses are
+supported but may be slow. In embedded application running on microcontrollers
+and such, it might not work at all.
+
+This emulator supports misaligned memory accesses.
+
+```emulator
+    lui x10, %hi(test)
+    addi x10, x10, %lo(test)
+
+    lw x11, 0(x10)
+    lw x12, 1(x10)
+    lw x13, 3(x10)
+
+.test
+    .byte 1, 2, 3, 4, 5, 6, 7, 8
+```
+
 Now you can try translating some basic C code into RISC-V assembly. Functions
 are... still out of the questions for now. Variables have to be either global or
-put in registers.
+put in registers. What else are we missing...
 
 ### Memory-mapped I/O
 
+Is it Hello World time? I think it's Hello World time...
+
+For a computer to not just be a space heater, we need some way for it to at
+least generate output and take input. While other architectures may have
+dedicated I/O instructions, RISC-V uses [memory mapped I/O]{x=term}.
+Essentially, this means that loads and stores to special addresses communicate
+with other [devices]{x=term}. They do not work like normal memory, and you
+should only use the supported widths to access them.
+
+One output device we have here is at address `0x1000_0000`. Any 32-bit writes to
+it appends the lowest 8 bits as a byte to the text in the output pane. In other
+words, a `sw` to that address writes a byte of output.
+
+(The output pane uses UTF-8 encoding.)
+
+<!-- TODO: Uhh... Make the assembler support character and string literals? -->
+
+```emulator
+    lui x11, %hi(0x10000000)
+    li x10, 0x48 # 'H'
+    sw x10, 0(x11)
+    li x10, 0x69 # 'i'
+    sw x10, 0(x11)
+    li x10, 0x21 # '!'
+    sw x10, 0(x11)
+    li x10, 0x0a # '\n'
+    sw x10, 0(x11)
+    ebreak
+```
+
+Eh, close enough to a greeting the entire world. We could refactor it a bit to
+use a loop, or whatever... Now that we think about it, how about going one step
+further and organize our code into some functions?
+
+## Functions
+
+We already know how to call a function and return back. Namely, `jal` calls a
+function, and `ret` returns. Usually functions take arguments, uses local
+variables, and returns results. Since there's no real difference between the 31
+general purpose registers, on account of them being, well, general purpose, we
+could just use any of them as we wish. Or we could follow the standard
+conventions.
+
+### Register aliases and calling conventions
+
+This whole time you probably have noticed that registers are listed with two
+names each, and indeed both work identically in assembly.
+
+```emulator
+    li x10, 1
+    li a0, 1
+    ebreak
+```
+
+These [register aliases]{x=term} are named after their uses:
+
+- [`s0` through `s11`]{x=regalias} are *saved* registers
+- [`t0` through `t6`]{x=regalias} are *temporary* registers
+- [`a0` through `a7`]{x=regalias} are *argument* registers
+- [`zero`]{x=regalias} is the, well, zero register
+- [`ra`]{x=regalias} is for the return address, by convention, as we've seen
+- [`sp`]{x=regalias} ... we'll talk about `sp` later
+- (The use of [`tp`]{x=regalias} and [`gp`]{x=regalias} is out of the scope of
+  this document.)
+
+(Yeah it's... all placed in a weird order... don't mind...)
+
+When you call a function, you put up to eight arguments in the... well, argument
+registers, in the order `a0`, `a1`, ..., `a7`. After that you use `jal` or
+something, which puts the return address in `ra`, and jumps to the function.
+
+Inside, the function, if it wishes to use the [call-saved]{x=term} registers
+`s0` through `s11`, it must save their values at the start of the function, and
+restore them before returning. The non call-saved registers `a0` through `a7`,
+`t0` through `t6` and `ra` may be modified without restoring their values.
+
+When the called function is done, it would, as mentioned, restore any used
+call-saved registers, and jump back to the return address, resuming the calling
+code.
+
+Here's a basic-ish example:
+
+```
+int memcmp(const void *a, const void *b, size_t n)
+```
+
+The parameter `a` is passed in `a0`, `b` is passed in `a1`, and `n` is passed in
+`a2`. The return value will be in `a0`. Here's an implementation and test run:
+
+```emulator
+    # memcmp(test1, test2, 4)
+
+    lui a0, %hi(test1)
+    addi a0, a0, %lo(test1)
+    lui a1, %hi(test2)
+    addi a1, a1, %lo(test2)
+    li a2, 4
+    jal memcmp
+    ebreak
+
+memcmp:
+    add a3, a0, a2 # a3 = a + n
+    li t0, 0
+
+memcmp_loop:
+    beq a0, a3, memcmp_done # No more bytes
+
+    lb t0, 0(a0)
+    lb t1, 0(a1)
+    sub t0, t0, t1  # t0 = *a - *b
+
+    bne t0, zero, memcmp_done # If different, done
+
+    addi a0, a0, 1  # a ++
+    addi a1, a1, 1  # b ++
+
+    j memcmp_loop
+
+memcmp_done:
+    mv a0, t0
+    ret
+
+test1:
+    .byte 1, 2, 3, 4
+test2:
+    .byte 1, 2, 2, 4
+```
+
+Here's a slightly better-organized "Hello World", using a `puts` function:
+
+```emulator
+    lui a0, %hi(msg)
+    addi a0, a0, %lo(msg)
+    jal puts
+    ebreak
+
+    # void puts(const char *)
+puts:
+    lui t1, %hi(0x10000000)
+puts_loop:
+    lb t0, 0(a0)
+    beq t0, zero, puts_done
+    sw t0, 0(t1)
+    addi a0, a0, 1
+    j puts_loop
+
+puts_done:
+    ret
+
+msg:
+    .byte 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77
+    .byte 0x6f, 0x72, 0x6c, 0x64, 0x21, 0x0a, 0x00
+```
+
+### The stack
+
+Although we can write some very basic functions now, there are still a few
+problems:
+
+- You can't call a function within another function because if you do so `ra`
+  would be overwritten, and then you can't return back from the outer function
+  anymore.
+- We still don't know how "saving" registers work.
+
+Clearly, both would require using the memory somehow. We can feed two birds with
+one scone by using memory in a structured way: The [stack]{x=term}.
+
+Unlike some other architectures, the `sp` register is not really special in any
+way. But just like how we can designate how `a0` is used, we can have some
+conventions about how `sp` is supposed to be used:
+
+- The register is call-saved, which means that when you return from a function,
+  `sp` needs to have the same value as when the function was entered
+- `sp` *always* points to somewhere in an area of memory called the "stack", and
+  it is *always* 16-byte aligned.
+
+And, for the stack itself:
+
+- On RISC-V, the stack grows to lower addresses, meaning that the memory where
+  `address >= sp` are "in the stack", and `address < sp` are free space that the
+  stack can grow into.
+- Code can allocate space on the stack by decrementing `sp`, and deallocate
+  space by incrementing `sp`. Of course, allocations and deallocations must be
+  balanced properly.
+- You can only freely use space that you have allocated.
+
+An example is in order. Let's say you have a function `foo` which just calls
+`bar` twice.
+
+```
+void foo() {
+    bar();
+    bar();
+}
+```
+
+Inside `foo`, it would need to save the initial `ra`, so it can return back
+later. Even though `ra` takes only 4 bytes, `sp` needs to be 16-byte aligned at
+all times, so we round that up to 16 bytes. Decrementing `sp` by 16 we allocate
+the space:
+
+```
+foo:
+    addi sp, sp, -16
+```
+
+Now, in addition to all of the non call-saved registers, we have 16 bytes of
+scratch space at `sp` through `sp + 15`. We can backup the value of `ra` here
+
+```
+    ...
+    sw ra, 0(sp)
+```
+
+Then we just call `bar` twice, which overwrites `ra`:
+
+```
+    ...
+    jal bar
+    jal bar
+```
+
+At the end of the function, we just need to get back the return address,
+deallocate the stack space, and return. Although using any register would
+suffice for the return address, since it is the backed up value of `ra` after
+all, we load it back to `ra`.
+
+```
+    ...
+    lw ra, 0(sp)
+    addi sp, sp, 16
+    ret
+```
+
+## Intermission: Position independence
 
 # Index
 
@@ -1186,6 +1461,9 @@ put in registers.
 :::
 
 ::: {index_of=reg}
+:::
+
+::: {index_of=regalias}
 :::
 
 ::: {index_of=insn}
