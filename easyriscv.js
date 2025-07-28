@@ -191,6 +191,7 @@ function convertEmulator(el) {
             writeOutput('[ Started ]\n')
             riscv = new RiscvState(mem);
             riscv.pc = 0x40000000;
+            riscv.regs[2 /* sp */] = 0x40000000 + mem.memory.byteLength;
             running = false;
             started = true;
             renderRegs();

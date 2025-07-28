@@ -104,4 +104,5 @@ pre {
     background-color: #eee;
     overflow-y: auto;
     padding: 0.5em;
+    word-break: break-all;
 }

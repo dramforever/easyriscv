@@ -866,10 +866,44 @@ const WORDS = (() => {
             const high = (rel >> 12 << 12) + ((rel & 0x800) !== 0);
 
             const auipc = 0x00000017 | (rd << 7) | high;
-            const addi = 0x00000013 | (rd << 7) | (rd << 15) | ((rel & 0xfff) << 20);
+            const addi = 0x00000067 | (rd << 7) | (rd << 15) | ((rel & 0xfff) << 20);
 
             view.setUint32(offset, auipc, /* littleEndian */ true);
             view.setUint32(offset + 4, addi, /* littleEndian */ true);
+            return { type: 'ok' };
+        }
+    });
+
+    // This is really similar to la, but I don't feel like generalizing from
+    // just two usages... Welp...
+    words.set('call', {
+        parse(tokens, p) {
+            const data = parse_types('o', tokens, p);
+            if (data.type === 'error') {
+                return data;
+            }
+
+            return {
+                type: 'instruction',
+                length: 8,
+                data
+            };
+        },
+        assemble(parsed, { evaluate, view, offset, pc }) {
+            const res = evaluate(parsed.data.values[0]);
+            if (res.type === 'error') {
+                return res;
+            }
+            const { value } = res;
+            const rel = (value - pc) >>> 0;
+            const high = (rel >> 12 << 12) + ((rel & 0x800) !== 0);
+
+            const ra = 1;
+            const auipc = 0x00000017 | (ra << 7) | high;
+            const jalr = 0x00000013 | (ra << 7) | (ra << 15) | ((rel & 0xfff) << 20);
+
+            view.setUint32(offset, auipc, /* littleEndian */ true);
+            view.setUint32(offset + 4, jalr, /* littleEndian */ true);
             return { type: 'ok' };
         }
     });
