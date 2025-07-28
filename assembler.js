@@ -866,7 +866,7 @@ const WORDS = (() => {
             const high = (rel >> 12 << 12) + ((rel & 0x800) !== 0);
 
             const auipc = 0x00000017 | (rd << 7) | high;
-            const addi = 0x00000067 | (rd << 7) | (rd << 15) | ((rel & 0xfff) << 20);
+            const addi = 0x00000013 | (rd << 7) | (rd << 15) | ((rel & 0xfff) << 20);
 
             view.setUint32(offset, auipc, /* littleEndian */ true);
             view.setUint32(offset + 4, addi, /* littleEndian */ true);
@@ -900,7 +900,7 @@ const WORDS = (() => {
 
             const ra = 1;
             const auipc = 0x00000017 | (ra << 7) | high;
-            const jalr = 0x00000013 | (ra << 7) | (ra << 15) | ((rel & 0xfff) << 20);
+            const jalr = 0x00000067 | (ra << 7) | (ra << 15) | ((rel & 0xfff) << 20);
 
             view.setUint32(offset, auipc, /* littleEndian */ true);
             view.setUint32(offset + 4, jalr, /* littleEndian */ true);
