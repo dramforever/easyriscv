@@ -151,9 +151,11 @@ function parse_mem(tokens, p) {
     }
 
     if (p.i >= tokens.length || tokens[p.i] !== '(') {
+        const got = p.i >= tokens.length ? 'end of line' : tokens[p.i];
+
         return {
             type: 'error',
-            message: `Expecting open paren, got ${tokens[p.i]}`
+            message: `Expecting open paren, got ${got}`
         };
     }
 
@@ -166,9 +168,10 @@ function parse_mem(tokens, p) {
     }
 
     if (p.i >= tokens.length || tokens[p.i] !== ')') {
+        const got = p.i >= tokens.length ? 'end of line' : tokens[p.i];
         return {
             type: 'error',
-            message: `Expecting close paren, got ${tokens[p.i]}`
+            message: `Expecting close paren, got ${got}`
         };
     }
 
