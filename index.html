@@ -95,7 +95,7 @@ emulator. Now click on ‘Run’. You’ll notice that:</p>
 <p>Changed into:</p>
 <pre><code>a0 (x10) 0x00000123</code></pre>
 <p>And the emulator stopped. Congratulations, you’ve run your first
-RISC-V assembly program.</p>
+RISC-V assembly program. First here, at least.</p>
 <h2 id="emulator-controls"><a href="#emulator-controls"
 class="anchor-link" aria-hidden="true">⋄</a>Emulator controls</h2>
 <p>‘Start’ assembles your code and, well, starts the emulator. If
@@ -134,27 +134,24 @@ means <code>x10 = x0 + 0x123</code>. As of <code>ebreak</code>, for now,
 just remember that <code>ebreak</code> stops the emulator.</p>
 <h2 id="processor-state"><a href="#processor-state" class="anchor-link"
 aria-hidden="true">⋄</a>Processor state</h2>
-<!-- TODO: Rewrite this section so it doesn't look like it's about the emulator -->
-<p>Why don’t we start with the register view that shows the internal
-state of the processor.</p>
-<p>On the top of the register view is <code>pc</code>. The <span
-id="term-program-counter"><em>program counter</em></span>, or <span
-id="term-pc"><em><code>pc</code></em></span> is the address of the
-current instruction. (The instruction listed in parenthesis next to
-<code>pc</code> in the register view is provided as a courtesy and is
-not part of the processor state.)</p>
-<p>After that, 31 <span id="term-general-purpose-registers"><em>general
-purpose registers</em></span> are listed, numbered <span
+<p>The <span id="term-program-counter"><em>program counter</em></span>,
+or <span id="term-pc"><em><code>pc</code></em></span> is the address of
+the current instruction. It points to the instruction to be
+executed.</p>
+<p>RV32I has 31 <span id="term-general-purpose-registers"><em>general
+purpose registers</em></span> numbered <span
 id="reg-x1-through-x31"><em><code>x1</code> through
 <code>x31</code></em></span>. These can contain any 32-bit data.</p>
 <p>(If you’re wondering, there are no flags for RV32I.)</p>
-<p>You may have noticed I’ve omitted one register. The register <span
-id="reg-x0"><em><code>x0</code></em></span> is a special “zero
-register”. For computational instructions, you can use <code>x0</code>
-anywhere a register is expected. Reading it always gives zero, and
-writing to it just gets ignored. The use of a special register
+<p>The register <span id="reg-x0"><em><code>x0</code></em></span> is a
+special “zero register”. For computational instructions, you can use
+<code>x0</code> anywhere a register is expected. Reading it always gives
+zero, and writing to it just gets ignored. The use of a special register
 simplifies the design of the architecture, and this use is shared by
 MIPS and Arm AArch64. We will make good use of <code>x0</code> soon.</p>
+<p>(Note: In the emulator, the instruction listed in parenthesis next to
+<code>pc</code> in the register view is provided as a convenience and is
+not part of the processor state.)</p>
 <h2 id="instruction-syntax"><a href="#instruction-syntax"
 class="anchor-link" aria-hidden="true">⋄</a>Instruction syntax</h2>
 <p>But before we can start talking about instructions themselves, we
@@ -662,9 +659,11 @@ For example, if we want <code>0x12345</code>:</p>
     addi x10, x10, 0x345
     ebreak
 </div>
-<p>For convenience, in assembly you can use <code>%hi()</code> and
-<code>%lo()</code> to extract the, well, high 20 and low 10 bits of a
-value. The previous example could also be written:</p>
+<p>For convenience, in assembly you can use <span
+id="rel-%hi()"><em><code>%hi()</code></em></span> and <span
+id="rel-%lo()"><em><code>%lo()</code></em></span> to extract the, well,
+high 20 and low 10 bits of a value. The previous example could also be
+written:</p>
 <div class="emulator-disabled">
     lui x10, %hi(0x12345)
     addi x10, x10, %lo(0x12345)
@@ -752,10 +751,9 @@ button here just runs the emulator for a certain number of steps,
 pausing by giving back control to the event loop in between.)</p>
 <p>(This isn’t the preferred way to write an unconditional jump. We’ll
 see what is later.)</p>
-<p>By the way, this should be fresh on your mind from a few sections
-earlier, but in case you forgot, there’s no <code>bgt[u]</code> or
-<code>ble[u]</code> because you can just swap <code>rs1</code> and
-<code>rs2</code> to get those.</p>
+<p>By the way, there’s no <code>bgt[u]</code> or <code>ble[u]</code>
+because you can just swap <code>rs1</code> and <code>rs2</code> to get
+those.</p>
 <h3 id="jumps">Jumps</h3>
 <p>There are two jump instructions in RISC-V. One of them is <span
 id="insn-jal"><em><code>jal</code></em></span> “jump and link”, which
@@ -1054,7 +1052,8 @@ with <code>lw</code>, the address is <code>rs1 + imm</code>.</p>
 lbu rd, imm(rs1)</code></pre>
 <p>Similarly for <span id="insn-lh"><em><code>lh</code></em></span>
 (“load half”) and <span id="insn-lhu"><em><code>lhu</code></em></span>
-(“load half unsigned”), just for unsigned halfwords:</p>
+(“load half unsigned”), just for unsigned halfwords (two bytes each,
+remember):</p>
 <pre><code>lh rd, imm(rs1)
 lhu rd, imm(rs1)</code></pre>
 <p>We can try out the sign extension and zero extension example from
@@ -1075,6 +1074,16 @@ earlier.</p>
 test:
     .byte 0x9c
 </div>
+<p>Correspondingly, the <span
+id="insn-sb"><em><code>sb</code></em></span> (“store byte”) and <span
+id="insn-sh"><em><code>sh</code></em></span> (“store half”) do the
+opposite of <code>lb</code> and <code>lh</code>, storing bytes and
+halfwords to memory. Instead of widening small values to register size,
+these take the lowest order bits from <code>rs1</code> and stores it to
+memory. (There’s no <code>sbu</code> and <code>shu</code> because stores
+are narrowing, not widening operations.)</p>
+<pre><code>sb rs2, imm(rs1)
+sh rs2, imm(rs1)</code></pre>
 <p>While we’re at it, here’s two more minor details. Firstly, <span
 id="term-endianness"><em>endianness</em></span>. While theoretically big
 endian RISC-V machines can exist, I’ve never seen one… and this emulator
@@ -1214,6 +1223,7 @@ Here’s an implementation and test run:</p>
     jal memcmp
     ebreak
 
+    # int memcmp(const void *a, const void *b, size_t n);
 memcmp:
     add a3, a0, a2 # a3 = a + n
     li t0, 0
@@ -1249,7 +1259,7 @@ test2:
     jal puts
     ebreak
 
-    # void puts(const char *)
+    # void puts(const char *);
 puts:
     lui t1, %hi(0x10000000)
 puts_loop:
@@ -1404,11 +1414,166 @@ only saved in the more complex branch, where as the simpler branch just
 returns directly. This is also acceptable from a calling convention
 perspective.</p>
 <p>(Note: In the emulator, the <code>sp</code> register is initialized
-to an address that would be convenient for you for use as a stack, as a
-convenience.)</p>
-<h2 id="intermission-position-independence"><a
-href="#intermission-position-independence" class="anchor-link"
-aria-hidden="true">⋄</a>Intermission: Position independence</h2>
+to an address that would be convenient for you for use as a stack, as a,
+well, convenience.)</p>
+<h2 id="intermission-numeric-labels"><a
+href="#intermission-numeric-labels" class="anchor-link"
+aria-hidden="true">⋄</a>Intermission: Numeric labels</h2>
+<p>Let’s go back to this example:</p>
+<pre><code>    # void puts(const char *);
+puts:
+    lui t1, %hi(0x10000000)
+puts_loop:
+    lb t0, 0(a0)
+    beq t0, zero, puts_done
+    sw t0, 0(t1)
+    addi a0, a0, 1
+    j puts_loop
+
+puts_done:
+    ret</code></pre>
+<p>Having to name things like <code>puts_loop</code>,
+<code>puts_done</code> is a bit annoying. There’s a shorter way: <span
+id="term-numeric-labels"><em>numeric labels</em></span>.</p>
+<p>A numeric label is one with a name of a decimal number. To refer to a
+numeric label, use the number and a <code>f</code> suffix for “forward”,
+and <code>b</code> for “backward”, and it will correspond to the nearest
+numeric label with that number, searching forwards or backwards,
+respectively.</p>
+<p>So, the <code>puts</code> example from earlier can be rewritten:</p>
+<pre><code>    # void puts(const char *);
+puts:
+    lui t1, %hi(0x10000000)
+1:
+    lb t0, 0(a0)
+    beq t0, zero, 2f
+    sw t0, 0(t1)
+    addi a0, a0, 1
+    j 1b
+
+2:
+    ret</code></pre>
+<p>Yeah I don’t really like this syntax either, but it is what we’ve
+got.</p>
+<h2 id="position-independence"><a href="#position-independence"
+class="anchor-link" aria-hidden="true">⋄</a>Position independence</h2>
+<p>Remember that oddball instruction I mentioned way back,
+<code>auipc</code>?</p>
+<p>I don’t know about your experience, but the first time I saw RISC-V
+disassembly, this is the one instruction that caught my eye. And this
+memory has stuck to me ever since. It’s a rather common occurrence in
+real RISC-V programs, and someho I’ve been hiding it from you this whole
+time. If you take a sneak peek at the next section’s title, you’ll see
+how far we’ve come without <code>auipc</code>.</p>
+<p>So what does it do?</p>
+<p>The <span id="insn-auipc"><em><code>auipc</code></em></span> (“add
+upper immediate to pc”) instruction is very similar to <code>lui</code>.
+Instead of setting <code>rd</code> to <code>imm20 &lt;&lt; 12</code>, it
+sets it to <code>pc + (imm20 &lt;&lt; 12)</code>, where <code>pc</code>
+is the address of the <code>auipc</code> instruction itself.</p>
+<pre><code>auipc rd, imm20</code></pre>
+<p>It works very similarly to <code>lui</code>. You can think of them as
+a pair: the “base” of <code>lui</code> is <code>0</code>, whereas the
+“base” of <code>auipc</code> is the address of the <code>auipc</code>
+instruction. So this code:</p>
+<pre><code>start:
+    auipc a0, 3
+    addi a0, a0, 4</code></pre>
+<p>Gives you <code>0x3004</code>, whereas this:</p>
+<pre><code>start:
+    auipc a0, 3
+    addi a0, a0, 4</code></pre>
+<p>Gives you <code>start + 0x3004</code>.</p>
+<p>Why would you need this? On modern systems, it’s often desirable to
+have machine code that can be moved around in address space. For
+example, a shared library i.e. dynamically linked library can be loaded
+into any program, at any address. It would be helpful if the machine
+code does not need to be patched every time. This is called <span
+id="term-position-independent-code"><em>position independent
+code</em></span> (<span id="term-pic"><em>PIC</em></span>).</p>
+<p>Some instructions already exhibit position independence. For example,
+as mentioned earlier when we talked about using <code>lui</code> and
+<code>jalr</code> as a pair, the branch instructions and
+<code>jal</code> are encoded, as with all RV32I instructions, into
+32-bit instruction words, so they can’t possibly be able to encode every
+possible address. Instead, the jump destination is <code>pc</code> plus
+some offset (<code>pc</code> being, as before, the jump/branch
+instruction itself), and the offset itself is encoded.</p>
+<p>You can see these are three different instructions that jump to
+itself. Since the offset is <code>0</code> in each case, the encoding is
+the same. Use the “Dump” button to see for yourself.</p>
+<div class="emulator-disabled">
+    ebreak
+
+test1:
+    j test1
+
+test2:
+    j test2
+
+test3:
+    j test3
+</div>
+<p>The <code>auipc</code> instruction allows for very flexible position
+independence. You can make arbitrary calculations based on the address.
+The immediate-bit operand mirroring <code>lui</code> means that it is
+well suited for two-instruction pairs, just like <code>lui</code>. These
+kind of “<code>pc</code> plus something” calculations are known as <span
+id="term-pc-relative-addressing"><em>pc-relative
+addressing</em></span>.</p>
+<p>The syntax for getting the assembler to generate the immediate values
+for pc-relative addressing a bit arcane but hear me out:</p>
+<div class="emulator-disabled">
+1:
+    auipc a0, %pcrel_hi(foo)
+    addi a0, a0, %pcrel_lo(1b)
+    ebreak
+
+foo:
+    .word 0x12345
+</div>
+<p>Like <code>%hi()</code> and <code>%lo()</code>, <span
+id="rel-%pcrel_hi()"><em><code>%pcrel_hi()</code></em></span> and <span
+id="rel-%pcrel_lo()"><em><code>%pcrel_lo()</code></em></span> gives you
+the immediate values needed for pc-relative addressing. You pass the
+label you want to address to <code>%pcrel_hi()</code>, but pass a label
+to <em>the <code>auipc</code> instruction</em> to
+<code>%pcrel_lo()</code>.</p>
+<p>Unlike <code>%lo()</code>, We need the address of the
+<code>auipc</code> instruction itself to calculate the immediate value,
+and this is why you need to pass a label to it. You don’t need to write
+<code>foo</code> again, since the assembler will look at the
+<code>auipc</code> instruction and see it’s supposed to be for
+<code>foo</code>.</p>
+<p>If you hate writing that, you can also use the convenience
+pseudoinstruction <span
+id="insn-la"><em><code>la</code></em></span>:</p>
+<pre><code>la rd, label</code></pre>
+<p>Just like a <code>lui</code> + <code>jalr</code> pair, an
+<code>auipc</code> + <code>jalr</code> can be used to jump to somewhere
+farther away than one <code>jal</code> can reach in position-independent
+code.</p>
+<p>One very common case is to call a function that might not be within
+reach of <code>jal</code>. You can use the pseudoinstruction <span
+id="insn-call"><em><code>call</code></em></span> for that.</p>
+<pre><code>call label</code></pre>
+<p>This expands to:</p>
+<pre><code>1:
+    auipc ra, %pcrel_hi(label)
+    jalr ra, %pcrel_lo(1b)(ra)</code></pre>
+<p>Notice how <code>ra</code> is used as a temporary register to store
+the intermediate result, which is immediately overwritten by
+<code>jalr</code>.</p>
+<p>In fact, there really isn’t any reason to <em>not</em> use
+<code>auipc</code> when using a label. This is why you if you
+disassemble a real RISC-V program, you see it everywhere, even in
+non-position-independent code.</p>
+<p>Now would be a good time to take a break, since we’re ready to head
+into…</p>
+<h2 id="privileged-architecture"><a href="#privileged-architecture"
+class="anchor-link" aria-hidden="true">⋄</a>Privileged architecture</h2>
+<p>We’re going to write an <em>extremely</em> bare bones operating
+system.</p>
 <h1 id="index">Index</h1>
 <ul>
 <li><a href="#term-align">align</a></li>
@@ -1430,7 +1595,13 @@ registers</a></li>
 <li><a href="#term-jump">jump</a></li>
 <li><a href="#term-load">load</a></li>
 <li><a href="#term-memory-mapped-i/o">memory mapped I/O</a></li>
+<li><a href="#term-numeric-labels">numeric labels</a></li>
 <li><a href="#term-pc"><code>pc</code></a></li>
+<li><a href="#term-pc-relative-addressing">pc-relative
+addressing</a></li>
+<li><a href="#term-pic">PIC</a></li>
+<li><a href="#term-position-independent-code">position independent
+code</a></li>
 <li><a href="#term-program-counter">program counter</a></li>
 <li><a href="#term-pseudoinstructions">pseudoinstructions</a></li>
 <li><a href="#term-rd"><code>rd</code></a></li>
@@ -1468,16 +1639,19 @@ registers</a></li>
 <li><a href="#insn-addi"><code>addi</code></a></li>
 <li><a href="#insn-and"><code>and</code></a></li>
 <li><a href="#insn-andi"><code>andi</code></a></li>
+<li><a href="#insn-auipc"><code>auipc</code></a></li>
 <li><a href="#insn-beq"><code>beq</code></a></li>
 <li><a href="#insn-bge"><code>bge</code></a></li>
 <li><a href="#insn-bgeu"><code>bgeu</code></a></li>
 <li><a href="#insn-blt"><code>blt</code></a></li>
 <li><a href="#insn-bltu"><code>bltu</code></a></li>
 <li><a href="#insn-bne"><code>bne</code></a></li>
+<li><a href="#insn-call"><code>call</code></a></li>
 <li><a href="#insn-j"><code>j</code></a></li>
 <li><a href="#insn-jal"><code>jal</code></a></li>
 <li><a href="#insn-jalr"><code>jalr</code></a></li>
 <li><a href="#insn-jr"><code>jr</code></a></li>
+<li><a href="#insn-la"><code>la</code></a></li>
 <li><a href="#insn-lb"><code>lb</code></a></li>
 <li><a href="#insn-lbu"><code>lbu</code></a></li>
 <li><a href="#insn-lh"><code>lh</code></a></li>
@@ -1489,6 +1663,8 @@ registers</a></li>
 <li><a href="#insn-or"><code>or</code></a></li>
 <li><a href="#insn-ori"><code>ori</code></a></li>
 <li><a href="#insn-ret"><code>ret</code></a></li>
+<li><a href="#insn-sb"><code>sb</code></a></li>
+<li><a href="#insn-sh"><code>sh</code></a></li>
 <li><a href="#insn-sll"><code>sll</code></a></li>
 <li><a href="#insn-slli"><code>slli</code></a></li>
 <li><a href="#insn-slt"><code>slt</code></a></li>
@@ -1510,4 +1686,10 @@ registers</a></li>
 <li><a href="#dir-.byte"><code>.byte</code></a></li>
 <li><a href="#dir-.half"><code>.half</code></a></li>
 <li><a href="#dir-.word"><code>.word</code></a></li>
+</ul>
+<ul>
+<li><a href="#rel-%hi()"><code>%hi()</code></a></li>
+<li><a href="#rel-%lo()"><code>%lo()</code></a></li>
+<li><a href="#rel-%pcrel_hi()"><code>%pcrel_hi()</code></a></li>
+<li><a href="#rel-%pcrel_lo()"><code>%pcrel_lo()</code></a></li>
 </ul>

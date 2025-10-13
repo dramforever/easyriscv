@@ -121,7 +121,7 @@ a0 (x10) 0x00000123
 ```
 
 And the emulator stopped. Congratulations, you've run your first RISC-V assembly
-program.
+program. First here, at least.
 
 ## Emulator controls
 
@@ -169,27 +169,23 @@ Now you may have also guessed that `addi x10, x0, 0x123` means `x10 = x0 +
 
 ## Processor state
 
-<!-- TODO: Rewrite this section so it doesn't look like it's about the emulator -->
+The [program counter]{x=term}, or [`pc`]{x=term} is the address of the current
+instruction. It points to the instruction to be executed.
 
-Why don't we start with the register view that shows the internal state of the
-processor.
-
-On the top of the register view is `pc`. The [program counter]{x=term}, or
-[`pc`]{x=term} is the address of the current instruction. (The instruction
-listed in parenthesis next to `pc` in the register view is provided as a
-courtesy and is not part of the processor state.)
-
-After that, 31 [general purpose registers]{x=term} are listed, numbered [`x1`
-through `x31`]{x=reg}. These can contain any 32-bit data.
+RV32I has 31 [general purpose registers]{x=term} numbered [`x1` through
+`x31`]{x=reg}. These can contain any 32-bit data.
 
 (If you're wondering, there are no flags for RV32I.)
 
-You may have noticed I've omitted one register. The register [`x0`]{x=reg} is a
-special "zero register". For computational instructions, you can use `x0`
-anywhere a register is expected. Reading it always gives zero, and writing to it
-just gets ignored. The use of a special register simplifies the design of the
-architecture, and this use is shared by MIPS and Arm AArch64. We will make good
-use of `x0` soon.
+The register [`x0`]{x=reg} is a special "zero register". For computational
+instructions, you can use `x0` anywhere a register is expected. Reading it
+always gives zero, and writing to it just gets ignored. The use of a special
+register simplifies the design of the architecture, and this use is shared by
+MIPS and Arm AArch64. We will make good use of `x0` soon.
+
+(Note: In the emulator, the instruction listed in parenthesis next to `pc` in
+the register view is provided as a convenience and is not part of the processor
+state.)
 
 ## Instruction syntax
 
@@ -239,8 +235,8 @@ The [`addi`]{x=insn} instruction adds the value in `rs1` to the immediate value
 addi rd, rs1, imm
 ```
 
-The [`add`]{x=insn} instruction adds the value in `rs1` to the value in `rs2`, and
-puts the result in `rd`.
+The [`add`]{x=insn} instruction adds the value in `rs1` to the value in `rs2`,
+and puts the result in `rd`.
 
 ```
 add rd, rs1, rs2
@@ -439,8 +435,8 @@ bitwise-"not".
     ebreak
 ```
 
-Another interesting operation you can do is to round/[align]{x=term} something up or
-down to a multiple of a power of two. For example, if you want to find the
+Another interesting operation you can do is to round/[align]{x=term} something
+up or down to a multiple of a power of two. For example, if you want to find the
 closest multiple of 16 below `a`, in binary that would be clearing the lowest 4
 bits, or `a & ~0b1111`. Conveniently, that's `a & -16` in two's complement.
 
@@ -706,9 +702,9 @@ to fill in the lower bits. For example, if we want `0x12345`:
     ebreak
 ```
 
-For convenience, in assembly you can use `%hi()` and `%lo()` to extract the,
-well, high 20 and low 10 bits of a value. The previous example could also be
-written:
+For convenience, in assembly you can use [`%hi()`]{x=rel} and [`%lo()`]{x=rel}
+to extract the, well, high 20 and low 10 bits of a value. The previous example
+could also be written:
 
 ```emulator
     lui x10, %hi(0x12345)
@@ -802,9 +798,8 @@ event loop in between.)
 (This isn't the preferred way to write an unconditional jump. We'll see what is
 later.)
 
-By the way, this should be fresh on your mind from a few sections earlier, but
-in case you forgot, there's no `bgt[u]` or `ble[u]` because you can just swap
-`rs1` and `rs2` to get those.
+By the way, there's no `bgt[u]` or `ble[u]` because you can just swap `rs1` and
+`rs2` to get those.
 
 ### Jumps
 
@@ -1140,7 +1135,8 @@ unsigned word, it would have to be `0x0000_009c` to preserve its value.
 
 For bytes, the [`lb`]{x=insn} ("load byte") instruction loads a byte and sign
 extends the result, and the [`lbu`]{x=insn} ("load byte unsigned") instruction
-does the same but zero extends the result. As with `lw`, the address is `rs1 + imm`.
+does the same but zero extends the result. As with `lw`, the address is `rs1 +
+imm`.
 
 ```
 lb rd, imm(rs1)
@@ -1148,7 +1144,7 @@ lbu rd, imm(rs1)
 ```
 
 Similarly for [`lh`]{x=insn} ("load half") and [`lhu`]{x=insn} ("load half
-unsigned"), just for unsigned halfwords:
+unsigned"), just for unsigned halfwords (two bytes each, remember):
 
 ```
 lh rd, imm(rs1)
@@ -1172,6 +1168,17 @@ We can try out the sign extension and zero extension example from earlier.
 
 test:
     .byte 0x9c
+```
+
+Correspondingly, the [`sb`]{x=insn} ("store byte") and [`sh`]{x=insn} ("store
+half") do the opposite of `lb` and `lh`, storing bytes and halfwords to memory.
+Instead of widening small values to register size, these take the lowest order
+bits from `rs1` and stores it to memory. (There's no `sbu` and `shu` because
+stores are narrowing, not widening operations.)
+
+```
+sb rs2, imm(rs1)
+sh rs2, imm(rs1)
 ```
 
 While we're at it, here's two more minor details. Firstly, [endianness]{x=term}.
@@ -1319,6 +1326,7 @@ The parameter `a` is passed in `a0`, `b` is passed in `a1`, and `n` is passed in
     jal memcmp
     ebreak
 
+    # int memcmp(const void *a, const void *b, size_t n);
 memcmp:
     add a3, a0, a2 # a3 = a + n
     li t0, 0
@@ -1355,7 +1363,7 @@ Here's a slightly better-organized "Hello World", using a `puts` function:
     jal puts
     ebreak
 
-    # void puts(const char *)
+    # void puts(const char *);
 puts:
     lui t1, %hi(0x10000000)
 puts_loop:
@@ -1538,9 +1546,191 @@ complex branch, where as the simpler branch just returns directly. This is also
 acceptable from a calling convention perspective.
 
 (Note: In the emulator, the `sp` register is initialized to an address that
-would be convenient for you for use as a stack, as a convenience.)
+would be convenient for you for use as a stack, as a, well, convenience.)
 
-## Intermission: Position independence
+## Intermission: Numeric labels
+
+Let's go back to this example:
+
+```
+    # void puts(const char *);
+puts:
+    lui t1, %hi(0x10000000)
+puts_loop:
+    lb t0, 0(a0)
+    beq t0, zero, puts_done
+    sw t0, 0(t1)
+    addi a0, a0, 1
+    j puts_loop
+
+puts_done:
+    ret
+```
+
+Having to name things like `puts_loop`, `puts_done` is a bit annoying. There's a
+shorter way: [numeric labels]{x=term}.
+
+A numeric label is one with a name of a decimal number. To refer to a numeric
+label, use the number and a `f` suffix for "forward", and `b` for "backward",
+and it will correspond to the nearest numeric label with that number, searching
+forwards or backwards, respectively.
+
+So, the `puts` example from earlier can be rewritten:
+
+```
+    # void puts(const char *);
+puts:
+    lui t1, %hi(0x10000000)
+1:
+    lb t0, 0(a0)
+    beq t0, zero, 2f
+    sw t0, 0(t1)
+    addi a0, a0, 1
+    j 1b
+
+2:
+    ret
+```
+
+Yeah I don't really like this syntax either, but it is what we've got.
+
+## Position independence
+
+Remember that oddball instruction I mentioned way back, `auipc`?
+
+I don't know about your experience, but the first time I saw RISC-V disassembly,
+this is the one instruction that caught my eye. And this memory has stuck to me
+ever since. It's a rather common occurrence in real RISC-V programs, and someho
+I've been hiding it from you this whole time. If you take a sneak peek at the
+next section's title, you'll see how far we've come without `auipc`.
+
+So what does it do?
+
+The [`auipc`]{x=insn} ("add upper immediate to pc") instruction is very similar
+to `lui`. Instead of setting `rd` to `imm20 << 12`, it sets it to `pc + (imm20
+<< 12)`, where `pc` is the address of the `auipc` instruction itself.
+
+```
+auipc rd, imm20
+```
+
+It works very similarly to `lui`. You can think of them as a pair: the "base" of
+`lui` is `0`, whereas the "base" of `auipc` is the address of the `auipc`
+instruction. So this code:
+
+```
+start:
+    auipc a0, 3
+    addi a0, a0, 4
+```
+
+Gives you `0x3004`, whereas this:
+
+```
+start:
+    auipc a0, 3
+    addi a0, a0, 4
+```
+
+Gives you `start + 0x3004`.
+
+Why would you need this? On modern systems, it's often desirable to have machine
+code that can be moved around in address space. For example, a shared library
+i.e. dynamically linked library can be loaded into any program, at any address.
+It would be helpful if the machine code does not need to be patched every time.
+This is called [position independent code]{x=term} ([PIC]{x=term}).
+
+Some instructions already exhibit position independence. For example, as
+mentioned earlier when we talked about using `lui` and `jalr` as a pair, the
+branch instructions and `jal` are encoded, as with all RV32I instructions, into
+32-bit instruction words, so they can't possibly be able to encode every
+possible address. Instead, the jump destination is `pc` plus some offset (`pc`
+being, as before, the jump/branch instruction itself), and the offset itself is
+encoded.
+
+You can see these are three different instructions that jump to itself. Since
+the offset is `0` in each case, the encoding is the same. Use the "Dump" button
+to see for yourself.
+
+```emulator
+    ebreak
+
+test1:
+    j test1
+
+test2:
+    j test2
+
+test3:
+    j test3
+```
+
+The `auipc` instruction allows for very flexible position independence. You can
+make arbitrary calculations based on the address. The immediate-bit operand
+mirroring `lui` means that it is well suited for two-instruction pairs, just
+like `lui`. These kind of "`pc` plus something" calculations are known as
+[pc-relative addressing]{x=term}.
+
+The syntax for getting the assembler to generate the immediate values for
+pc-relative addressing a bit arcane but hear me out:
+
+```emulator
+1:
+    auipc a0, %pcrel_hi(foo)
+    addi a0, a0, %pcrel_lo(1b)
+    ebreak
+
+foo:
+    .word 0x12345
+```
+
+Like `%hi()` and `%lo()`, [`%pcrel_hi()`]{x=rel} and [`%pcrel_lo()`]{x=rel}
+gives you the immediate values needed for pc-relative addressing. You pass the
+label you want to address to `%pcrel_hi()`, but pass a label to *the `auipc`
+instruction* to `%pcrel_lo()`.
+
+Unlike `%lo()`, We need the address of the `auipc` instruction itself to
+calculate the immediate value, and this is why you need to pass a label to it.
+You don't need to write `foo` again, since the assembler will look at the
+`auipc` instruction and see it's supposed to be for `foo`.
+
+If you hate writing that, you can also use the convenience pseudoinstruction
+[`la`]{x=insn}:
+
+```
+la rd, label
+```
+
+Just like a `lui` + `jalr` pair, an `auipc` + `jalr` can be used to jump to
+somewhere farther away than one `jal` can reach in position-independent code.
+
+One very common case is to call a function that might not be within reach of
+`jal`. You can use the pseudoinstruction [`call`]{x=insn} for that.
+
+```
+call label
+```
+
+This expands to:
+
+```
+1:
+    auipc ra, %pcrel_hi(label)
+    jalr ra, %pcrel_lo(1b)(ra)
+```
+
+Notice how `ra` is used as a temporary register to store the intermediate
+result, which is immediately overwritten by `jalr`.
+
+In fact, there really isn't any reason to *not* use `auipc` when using a label.
+This is why you if you disassemble a real RISC-V program, you see it everywhere,
+even in non-position-independent code.
+
+Now would be a good time to take a break, since we're ready to head into...
+
+## Privileged architecture
+
+We're going to write an *extremely* bare bones operating system.
 
 # Index
 
@@ -1557,4 +1747,7 @@ would be convenient for you for use as a stack, as a convenience.)
 :::
 
 ::: {index_of=dir}
+:::
+
+::: {index_of=rel}
 :::
