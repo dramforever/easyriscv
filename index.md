@@ -1471,6 +1471,7 @@ fib:
     # If n < 2, then return n
     bge a0, t0, fib_large
     ret
+
 fib_large:
     # Otherwise, n >= 2
 
@@ -1507,6 +1508,37 @@ fibonacci(n) {
     else { return fib(n - 1) + fib(n - 2); }
 }
 ```
+
+What's worth noting here is the fairly symmetric pattern of saving registers at
+the start:
+
+```
+    addi sp, sp, -16
+    sw ra, 0(sp)
+    sw s0, 4(sp)
+    sw s1, 8(sp)
+```
+
+And restoring them at the end:
+
+```
+    lw ra, 0(sp)
+    lw s0, 4(sp)
+    lw s1, 8(sp)
+    addi sp, sp, 16
+    ret
+```
+
+registers. Usually, the most convenient way to manage this is to put values that
+need to be preserved across inner function calls in the `s` registers, and then
+add code at the beginning to save them, and add code at the end to restore them.
+
+A little thing to also note that the `s` registers are only saved in the more
+complex branch, where as the simpler branch just returns directly. This is also
+acceptable from a calling convention perspective.
+
+(Note: In the emulator, the `sp` register is initialized to an address that
+would be convenient for you for use as a stack, as a convenience.)
 
 ## Intermission: Position independence
 

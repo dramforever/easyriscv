@@ -578,59 +578,59 @@ unsigned and <code>s</code> means two’s complement signed.)</p>
 <col style="width: 30%" />
 </colgroup>
 <thead>
-<tr class="header">
+<tr>
 <th>Instruction</th>
 <th>Operation</th>
 <th>Immediate range</th>
 </tr>
 </thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>add[i]</code></td>
 <td><code>a + b</code></td>
 <td><code>[-2048, 2047]</code></td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>sub</code></td>
 <td><code>a - b</code></td>
 <td>(n/a)</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>slt[i]</code></td>
 <td><code>(a &lt;<sub>s</sub> b) ? 1 : 0</code></td>
 <td><code>[-2048, 2047]</code></td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>slt[i]u</code></td>
 <td><code>(a &lt;<sub>u</sub> b) ? 1 : 0</code></td>
 <td><code>[-2048, 2047]</code></td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>xor[i]</code></td>
 <td><code>a ^ b</code></td>
 <td><code>[-2048, 2047]</code></td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>or[i]</code></td>
 <td><code>a | b</code></td>
 <td><code>[-2048, 2047]</code></td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>and[i]</code></td>
 <td><code>a &amp; b</code></td>
 <td><code>[-2048, 2047]</code></td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>sll[i]</code></td>
 <td><code>a &lt;&lt; b</code></td>
 <td><code>[0, 31]</code></td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>srl[i]</code></td>
 <td><code>a &gt;&gt;<sub>u</sub> b</code></td>
 <td><code>[0, 31]</code></td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>sra[i]</code></td>
 <td><code>a &gt;&gt;<sub>s</sub> b</code></td>
 <td><code>[0, 31]</code></td>
@@ -1350,6 +1350,7 @@ fib:
     # If n &lt; 2, then return n
     bge a0, t0, fib_large
     ret
+
 fib_large:
     # Otherwise, n &gt;= 2
 
@@ -1377,6 +1378,34 @@ fib_large:
     addi sp, sp, 16
     ret
 </div>
+<p>The algorithm should be fairly straightforward:</p>
+<pre><code>fibonacci(n) {
+    if (n &lt; 2) { return n; }
+    else { return fib(n - 1) + fib(n - 2); }
+}</code></pre>
+<p>What’s worth noting here is the fairly symmetric pattern of saving
+registers at the start:</p>
+<pre><code>    addi sp, sp, -16
+    sw ra, 0(sp)
+    sw s0, 4(sp)
+    sw s1, 8(sp)</code></pre>
+<p>And restoring them at the end:</p>
+<pre><code>    lw ra, 0(sp)
+    lw s0, 4(sp)
+    lw s1, 8(sp)
+    addi sp, sp, 16
+    ret</code></pre>
+<p>registers. Usually, the most convenient way to manage this is to put
+values that need to be preserved across inner function calls in the
+<code>s</code> registers, and then add code at the beginning to save
+them, and add code at the end to restore them.</p>
+<p>A little thing to also note that the <code>s</code> registers are
+only saved in the more complex branch, where as the simpler branch just
+returns directly. This is also acceptable from a calling convention
+perspective.</p>
+<p>(Note: In the emulator, the <code>sp</code> register is initialized
+to an address that would be convenient for you for use as a stack, as a
+convenience.)</p>
 <h2 id="intermission-position-independence"><a
 href="#intermission-position-independence" class="anchor-link"
 aria-hidden="true">⋄</a>Intermission: Position independence</h2>
