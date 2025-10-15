@@ -373,7 +373,7 @@ of 16 below <code>a</code>, in binary that would be clearing the lowest
 4 bits, or <code>a &amp; ~0b1111</code>. Conveniently, that’s
 <code>a &amp; -16</code> in two’s complement.</p>
 <p>Aligning up is less intuitive, but one idea would be adding 16 first.
-However that gives an incorrect result for powers of 16. It’s easy
+However that gives an incorrect result for multiples of 16. It’s easy
 enough to fix though: adding one less works exactly right:
 <code>(a + 15) &amp; -16</code></p>
 <div class="emulator-disabled">
@@ -784,8 +784,8 @@ loop:
     jal x0, loop
 </div>
 <p>For convenience, a pseudoinstruction is available for you: <span
-id="insn-j"><em><code>j</code></em></span> is for <code>jal</code> with
-<code>rd</code> being <code>x0</code>:</p>
+id="insn-j"><em><code>j</code></em></span> (“jump”) is for
+<code>jal</code> with <code>rd</code> being <code>x0</code>:</p>
 <pre><code>j label</code></pre>
 <p>As of why you would want to do this… Well, we only have 32 bits per
 instruction, and since the <code>jal</code> instruction only needs one
@@ -816,9 +816,9 @@ foo:
 combo at the start puts the address of the label <code>foo</code> in
 register <code>x10</code>.</p>
 <p>Similar to <code>j</code>, <span
-id="insn-jr"><em><code>jr</code></em></span> is a psuedoinstruction for
-<code>jalr</code> with <code>rd</code> being <code>x0</code> and
-<code>imm</code> being <code>0</code>:</p>
+id="insn-jr"><em><code>jr</code></em></span> (“jump register”) is a
+psuedoinstruction for <code>jalr</code> with <code>rd</code> being
+<code>x0</code> and <code>imm</code> being <code>0</code>:</p>
 <pre><code>jr rs1</code></pre>
 <p>Hmmm… If I didn’t really need the address in <code>x10</code>, that
 <code>addi</code> would be unnecessary, since <code>jalr</code> has the
@@ -863,8 +863,8 @@ double:
 register for providing the return address by convention. For
 convenience, if the destination register is omitted in <code>jal</code>,
 it defaults to <code>x1</code>. Meanwhile, <span
-id="insn-ret"><em><code>ret</code></em></span> is a pseudoinstruction
-that stands for <code>jr x1</code>,
+id="insn-ret"><em><code>ret</code></em></span> (“return”) is a
+pseudoinstruction that stands for <code>jr x1</code>,
 i.e. <code>jalr x0, 0(x1)</code>:</p>
 <pre><code>jal label
 ret</code></pre>
@@ -1116,7 +1116,7 @@ on microcontrollers and such, it might not work at all.</p>
     lw x12, 1(x10)
     lw x13, 3(x10)
 
-.test
+test:
     .byte 1, 2, 3, 4, 5, 6, 7, 8
 </div>
 <p>Now you can try translating some basic C code into RISC-V assembly.
@@ -1405,10 +1405,6 @@ registers at the start:</p>
     lw s1, 8(sp)
     addi sp, sp, 16
     ret</code></pre>
-<p>registers. Usually, the most convenient way to manage this is to put
-values that need to be preserved across inner function calls in the
-<code>s</code> registers, and then add code at the beginning to save
-them, and add code at the end to restore them.</p>
 <p>A little thing to also note that the <code>s</code> registers are
 only saved in the more complex branch, where as the simpler branch just
 returns directly. This is also acceptable from a calling convention
@@ -1462,9 +1458,9 @@ class="anchor-link" aria-hidden="true">⋄</a>Position independence</h2>
 <p>I don’t know about your experience, but the first time I saw RISC-V
 disassembly, this is the one instruction that caught my eye. And this
 memory has stuck to me ever since. It’s a rather common occurrence in
-real RISC-V programs, and someho I’ve been hiding it from you this whole
-time. If you take a sneak peek at the next section’s title, you’ll see
-how far we’ve come without <code>auipc</code>.</p>
+real RISC-V programs, and somehow I’ve been hiding it from you this
+whole time. If you take a sneak peek at the next section’s title, you’ll
+see how far we’ve come without <code>auipc</code>.</p>
 <p>So what does it do?</p>
 <p>The <span id="insn-auipc"><em><code>auipc</code></em></span> (“add
 upper immediate to pc”) instruction is very similar to <code>lui</code>.
@@ -1515,10 +1511,11 @@ test3:
     j test3
 </div>
 <p>The <code>auipc</code> instruction allows for very flexible position
-independence. You can make arbitrary calculations based on the address.
-The immediate-bit operand mirroring <code>lui</code> means that it is
-well suited for two-instruction pairs, just like <code>lui</code>. These
-kind of “<code>pc</code> plus something” calculations are known as <span
+independence. You can make arbitrary calculations based on the address
+at which code is located. The immediate-bit operand mirroring
+<code>lui</code> means that it is well suited for two-instruction pairs,
+just like <code>lui</code>. These kind of “<code>pc</code> plus
+something” calculations are known as <span
 id="term-pc-relative-addressing"><em>pc-relative
 addressing</em></span>.</p>
 <p>The syntax for getting the assembler to generate the immediate values

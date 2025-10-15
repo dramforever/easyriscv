@@ -441,8 +441,8 @@ closest multiple of 16 below `a`, in binary that would be clearing the lowest 4
 bits, or `a & ~0b1111`. Conveniently, that's `a & -16` in two's complement.
 
 Aligning up is less intuitive, but one idea would be adding 16 first. However
-that gives an incorrect result for powers of 16. It's easy enough to fix though:
-adding one less works exactly right: `(a + 15) & -16`
+that gives an incorrect result for multiples of 16. It's easy enough to fix
+though: adding one less works exactly right: `(a + 15) & -16`
 
 ```emulator
     li x10, 0x123
@@ -838,8 +838,8 @@ loop:
     jal x0, loop
 ```
 
-For convenience, a pseudoinstruction is available for you: [`j`]{x=insn} is for
-`jal` with `rd` being `x0`:
+For convenience, a pseudoinstruction is available for you: [`j`]{x=insn}
+("jump") is for `jal` with `rd` being `x0`:
 
 ```
 j label
@@ -874,8 +874,8 @@ foo:
 In case you forgot by now, the `lui`/`addi` combo at the start puts the address
 of the label `foo` in register `x10`.
 
-Similar to `j`, [`jr`]{x=insn} is a psuedoinstruction for `jalr` with `rd` being
-`x0` and `imm` being `0`:
+Similar to `j`, [`jr`]{x=insn} ("jump register") is a psuedoinstruction for
+`jalr` with `rd` being `x0` and `imm` being `0`:
 
 ```
 jr rs1
@@ -925,8 +925,8 @@ double:
 
 Note that I used the register `x1` for this, which is the register for providing
 the return address by convention. For convenience, if the destination register
-is omitted in `jal`, it defaults to `x1`. Meanwhile, [`ret`]{x=insn} is a
-pseudoinstruction that stands for `jr x1`, i.e. `jalr x0, 0(x1)`:
+is omitted in `jal`, it defaults to `x1`. Meanwhile, [`ret`]{x=insn} ("return")
+is a pseudoinstruction that stands for `jr x1`, i.e. `jalr x0, 0(x1)`:
 
 ```
 jal label
@@ -1216,7 +1216,7 @@ This emulator supports misaligned memory accesses.
     lw x12, 1(x10)
     lw x13, 3(x10)
 
-.test
+test:
     .byte 1, 2, 3, 4, 5, 6, 7, 8
 ```
 
@@ -1537,10 +1537,6 @@ And restoring them at the end:
     ret
 ```
 
-registers. Usually, the most convenient way to manage this is to put values that
-need to be preserved across inner function calls in the `s` registers, and then
-add code at the beginning to save them, and add code at the end to restore them.
-
 A little thing to also note that the `s` registers are only saved in the more
 complex branch, where as the simpler branch just returns directly. This is also
 acceptable from a calling convention perspective.
@@ -1600,7 +1596,7 @@ Remember that oddball instruction I mentioned way back, `auipc`?
 
 I don't know about your experience, but the first time I saw RISC-V disassembly,
 this is the one instruction that caught my eye. And this memory has stuck to me
-ever since. It's a rather common occurrence in real RISC-V programs, and someho
+ever since. It's a rather common occurrence in real RISC-V programs, and somehow
 I've been hiding it from you this whole time. If you take a sneak peek at the
 next section's title, you'll see how far we've come without `auipc`.
 
@@ -1666,10 +1662,10 @@ test3:
 ```
 
 The `auipc` instruction allows for very flexible position independence. You can
-make arbitrary calculations based on the address. The immediate-bit operand
-mirroring `lui` means that it is well suited for two-instruction pairs, just
-like `lui`. These kind of "`pc` plus something" calculations are known as
-[pc-relative addressing]{x=term}.
+make arbitrary calculations based on the address at which code is located. The
+immediate-bit operand mirroring `lui` means that it is well suited for
+two-instruction pairs, just like `lui`. These kind of "`pc` plus something"
+calculations are known as [pc-relative addressing]{x=term}.
 
 The syntax for getting the assembler to generate the immediate values for
 pc-relative addressing a bit arcane but hear me out:
