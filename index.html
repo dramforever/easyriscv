@@ -1312,8 +1312,8 @@ aria-hidden="true"></a>Functions</h1>
 functions take arguments, uses local variables, and returns results.
 Since there’s no real difference between the 31 general purpose
 registers, on account of them being, well, general purpose, we could
-just use any of them as we wish. Or we could follow the standard
-conventions.</p>
+just use any of them as we wish. Usually though, there are some standard
+conventions to follow</p>
 <h2 id="register-aliases-and-calling-conventions"><a
 href="#register-aliases-and-calling-conventions" class="anchor-link"
 aria-hidden="true"></a>Register aliases and calling conventions</h2>
@@ -1867,7 +1867,7 @@ the CSR <code>cycle</code> and higher 32 bits in the CSR
 <code>cycleh</code>.</p>
 <p>While the emulator is running, scroll down on the register view
 panel, and on the bottom you’ll see the values of these counters. For
-convenience, They’re shown combined, so,
+convenience, they’re shown combined, so,
 <code>cycle = 0x11223344_55667788</code> means <code>cycleh</code> is
 <code>0x11223344</code>, and <code>cycle</code> is
 <code>0x55667788</code>.</p>
@@ -2114,9 +2114,10 @@ user_entry:
 <p>As you can see, after we enter User mode, all of the CSRs used for
 exception handling become completely inaccessible, not even readable. As
 with writing a read-only CSR, accessing an CSR without permission also
-causes an illegal instruction exception. Moreover, when an exception
-happens, we go back to Machine mode, so the exception handler runs in
-Machine mode. Here it does nothing except</p>
+causes an illegal instruction exception.</p>
+<p>Moreover, when an exception happens, we go back to Machine mode, so
+the exception handler runs in Machine mode. Here the handler does
+nothing except stopping the emulator.</p>
 <h2 id="intentionally-causing-an-exception"><a
 href="#intentionally-causing-an-exception" class="anchor-link"
 aria-hidden="true"></a>Intentionally causing an exception</h2>
@@ -2169,8 +2170,8 @@ make it easy to check specifically for this case.</p>
 href="#saving-and-restoring-all-registers" class="anchor-link"
 aria-hidden="true"></a>Saving and restoring all registers</h2>
 <p>One thing that you would want in your trap handler is to not trust or
-disturb <em>any</em> general purpose registers in the code that you’ve
-trapped from, unless you intentionally want to do so, for example to
+disturb <em>any</em> general purpose registers in the code that the trap
+occurred in, unless you intentionally want to do so, for example to
 return a value from a system call. So you’d want to save all the
 registers to memory, before doing anything else. However, accessing
 memory requires a general purpose register.</p>

@@ -1263,8 +1263,8 @@ We already know how to call a function and return back. Namely, `jal` calls a
 function, and `ret` returns. Usually functions take arguments, uses local
 variables, and returns results. Since there's no real difference between the 31
 general purpose registers, on account of them being, well, general purpose, we
-could just use any of them as we wish. Or we could follow the standard
-conventions.
+could just use any of them as we wish. Usually though, there are some standard
+conventions to follow
 
 ## Register aliases and calling conventions
 
@@ -1855,7 +1855,7 @@ the full cycle counter has 64 bits, with the lower 32 bits in the CSR `cycle`
 and higher 32 bits in the CSR `cycleh`.
 
 While the emulator is running, scroll down on the register view panel, and on
-the bottom you'll see the values of these counters. For convenience, They're
+the bottom you'll see the values of these counters. For convenience, they're
 shown combined, so, `cycle = 0x11223344_55667788` means `cycleh` is
 `0x11223344`, and `cycle` is `0x55667788`.
 
@@ -2087,9 +2087,11 @@ user_entry:
 As you can see, after we enter User mode, all of the CSRs used for exception
 handling become completely inaccessible, not even readable. As with writing a
 read-only CSR, accessing an CSR without permission also causes an illegal
-instruction exception. Moreover, when an exception happens, we go back to
-Machine mode, so the exception handler runs in Machine mode. Here it does
-nothing except
+instruction exception.
+
+Moreover, when an exception happens, we go back to Machine mode, so the
+exception handler runs in Machine mode. Here the handler does nothing except
+stopping the emulator.
 
 ## Intentionally causing an exception
 
@@ -2140,10 +2142,10 @@ specifically for this case.
 ## Saving and restoring all registers
 
 One thing that you would want in your trap handler is to not trust or disturb
-*any* general purpose registers in the code that you've trapped from, unless you
-intentionally want to do so, for example to return a value from a system call.
-So you'd want to save all the registers to memory, before doing anything else.
-However, accessing memory requires a general purpose register.
+*any* general purpose registers in the code that the trap occurred in, unless
+you intentionally want to do so, for example to return a value from a system
+call. So you'd want to save all the registers to memory, before doing anything
+else. However, accessing memory requires a general purpose register.
 
 The [`mscratch`]{x=csr} ("M-mode scratch") CSR can help with this. This
 register, unlike all the others, have no special functionality. It can hold any
