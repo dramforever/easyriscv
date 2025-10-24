@@ -355,6 +355,8 @@ function convertEmulator(el) {
 
 const emulators = document.querySelectorAll('.emulator-disabled');
 
-for (const e of emulators) {
-    convertEmulator(e);
+if (!location.search.match(/[?&]no-emulator($|&)/)) {
+    for (const e of emulators) {
+        convertEmulator(e);
+    }
 }
