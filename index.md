@@ -902,7 +902,7 @@ range restrictions. You do need a free scratch register for the high part of the
 address though, but since RISC-V gives you 31 of them, this shouldn't be too
 much of a problem.
 
-# Jump and link
+## Jump and link
 
 What's the deal with the destination register then? What do you need the address
 of the next instruction for? For jumping *back* of course. We can use this
@@ -2180,6 +2180,8 @@ We'll see the full code for this in the following section.
 
 # Writing a very very bare bones operating system
 
+## Design
+
 We have enough of to write a very very bare bones operating system. It will
 support these features:
 
@@ -2220,6 +2222,8 @@ dispatch based on `a7`. If it's not, we report an exception from U-mode.
 At the beginning, we simply initialize the `struct regs` structure on stack,
 initialize user `sp` and `pc` in it, and jump to the same code that handles
 returning to U-mode.
+
+## Code
 
 Here's the assembly code with User mode code at the bottom. You may want to
 uncheck "Pause on exc." and "Print on exc." for convenience.
@@ -2535,6 +2539,8 @@ exit:
 msg_hello:
     .byte 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21, 0x0a, 0x00
 ```
+
+## Pseudocode reference
 
 For reference, here's some of the OS code in pseudo-C.
 

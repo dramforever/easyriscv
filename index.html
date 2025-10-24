@@ -54,9 +54,9 @@
         <ul>
         <li><a href="#branches" id="toc-branches">Branches</a></li>
         <li><a href="#jumps" id="toc-jumps">Jumps</a></li>
-        </ul></li>
         <li><a href="#jump-and-link" id="toc-jump-and-link">Jump and
         link</a></li>
+        </ul></li>
         <li><a href="#memory" id="toc-memory">Memory</a>
         <ul>
         <li><a href="#basic-memory-accesses"
@@ -115,7 +115,13 @@
         </ul></li>
         <li><a href="#writing-a-very-very-bare-bones-operating-system"
         id="toc-writing-a-very-very-bare-bones-operating-system">Writing
-        a very very bare bones operating system</a></li>
+        a very very bare bones operating system</a>
+        <ul>
+        <li><a href="#design" id="toc-design">Design</a></li>
+        <li><a href="#code" id="toc-code">Code</a></li>
+        <li><a href="#pseudocode-reference"
+        id="toc-pseudocode-reference">Pseudocode reference</a></li>
+        </ul></li>
         <li><a href="#lies-and-omissions"
         id="toc-lies-and-omissions">Lies and omissions</a></li>
         <li><a href="#references"
@@ -985,8 +991,8 @@ this two-instruction combo can jump to any address, free from range
 restrictions. You do need a free scratch register for the high part of
 the address though, but since RISC-V gives you 31 of them, this
 shouldn’t be too much of a problem.</p>
-<h1 id="jump-and-link"><a href="#jump-and-link" class="anchor-link"
-aria-hidden="true"></a>Jump and link</h1>
+<h2 id="jump-and-link"><a href="#jump-and-link" class="anchor-link"
+aria-hidden="true"></a>Jump and link</h2>
 <p>What’s the deal with the destination register then? What do you need
 the address of the next instruction for? For jumping <em>back</em> of
 course. We can use this functionality to call functions and return
@@ -2197,6 +2203,8 @@ pointer to the operating system stack pointer.</p>
 href="#writing-a-very-very-bare-bones-operating-system"
 class="anchor-link" aria-hidden="true"></a>Writing a very very bare
 bones operating system</h1>
+<h2 id="design"><a href="#design" class="anchor-link"
+aria-hidden="true"></a>Design</h2>
 <p>We have enough of to write a very very bare bones operating system.
 It will support these features:</p>
 <ul>
@@ -2238,6 +2246,8 @@ it’s not, we report an exception from U-mode.</p>
 <p>At the beginning, we simply initialize the <code>struct regs</code>
 structure on stack, initialize user <code>sp</code> and <code>pc</code>
 in it, and jump to the same code that handles returning to U-mode.</p>
+<h2 id="code"><a href="#code" class="anchor-link"
+aria-hidden="true"></a>Code</h2>
 <p>Here’s the assembly code with User mode code at the bottom. You may
 want to uncheck “Pause on exc.” and “Print on exc.” for convenience.</p>
 <p>Do not be too hard on yourself if you have trouble understanding the
@@ -2551,6 +2561,8 @@ exit:
 msg_hello:
     .byte 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21, 0x0a, 0x00
 </div>
+<h2 id="pseudocode-reference"><a href="#pseudocode-reference"
+class="anchor-link" aria-hidden="true"></a>Pseudocode reference</h2>
 <p>For reference, here’s some of the OS code in pseudo-C.</p>
 <pre><code>void trap_main(struct regs *regs) {
     unsigned long cause = csr_read(mcause);
