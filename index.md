@@ -2666,6 +2666,7 @@ looking to get further into RISC-V low-level development
 
 - RISC-V Instruction Set Manual <https://github.com/riscv/riscv-isa-manual>
 - RISC-V Assembly Programmer's Manual <https://github.com/riscv-non-isa/riscv-asm-manual>
+- RISC-V Calling Conventions <https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/master/riscv-cc.adoc>
 - Operating System in 1,000 Lines <https://operating-system-in-1000-lines.vercel.app/en/>
 
 Other useful resources that I have used while writing this tutorial:
