@@ -3,10 +3,10 @@ terms = {}
 
 -- Adds anchor links to headings with IDs.
 function Header(el)
-  if el.level == 2 and el.identifier ~= '' then
+  if el.level <= 2 and el.identifier ~= '' then
     -- an empty link to this header
     local anchor_link = pandoc.Link(
-      {'⋄'},                -- content
+      {},                -- content
       '#' .. el.identifier,  -- href
       '',                   -- title
       {class = 'anchor-link', ['aria-hidden'] = 'true'} -- attributes

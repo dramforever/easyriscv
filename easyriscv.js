@@ -150,6 +150,10 @@ function convertEmulator(el) {
         const regFmt = (i) => makeField(fmt(newState.regs[i]), oldState !== null && newState.regs[i] !== oldState.regs[i]);
         const field = (n) => makeField(`${newState[n]}`, oldState !== null && newState[n] !== oldState[n]);
         const fieldFmt = (n) => makeField(fmt(newState[n]), oldState !== null && newState[n] !== oldState[n]);
+        const mkPriv = (v) => new Map([[0, 'User'], [3, 'Machine']]).get(v) ?? '???';
+        const fieldPriv = (n) => makeField(`${newState[n]} (${mkPriv(newState[n])})`, oldState !== null && newState[n] !== oldState[n]);
+
+        const mstatusField = makeField(fmt(newState.mpp << 11), oldState !== null && newState.mpp !== oldState.mpp);
 
         const insn = mem.fetch(riscv.pc);
         parts.push(`  pc       ${fmt(newState.pc)} (insn: ${insn === null ? '???' : fmt(insn)})\n`);
@@ -159,7 +163,8 @@ function convertEmulator(el) {
             parts.push(`${names[i].padStart(4, ' ')} ${`(x${i})`.padStart(5, ' ')} `, regFmt(i), end);
         }
         parts.push('\n');
-        parts.push(`(priv) = `, field('priv'),` | mstatus = { MPP = `, field('mpp'),` }\n`);
+        parts.push(`(priv) = `, fieldPriv('priv'), `\n`);
+        parts.push(`mstatus = `, mstatusField, ` = { MPP = `, fieldPriv('mpp'),` }\n`);
         parts.push(`mscratch = `, fieldFmt('mscratch'), ` | `);
         parts.push(`mtvec = `, fieldFmt('mtvec'), `\n`);
         parts.push(`mepc = `, fieldFmt('mepc'), ` | `);

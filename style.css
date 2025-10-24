@@ -1,3 +1,9 @@
+.page-banner {
+    font-size: 2em;
+    font-weight: bold;
+    border-bottom: 2px solid black;
+}
+
 body {
     margin: 3ex auto;
     max-width: calc(min(750px, 90%));
@@ -21,8 +27,12 @@ pre {
 }
 
 .anchor-link {
-    padding-right: 0.5em;
+    padding-right: 0.25em;
     text-decoration: none;
+}
+
+.anchor-link::before {
+    content: "⋄";
 }
 
 .anchor-link:hover {

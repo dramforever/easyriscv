@@ -1,16 +1,6 @@
-```{=html}
-<head>
-    <title>Easy RISC-V</title>
-
-    <script type="module" src="easyriscv.js"></script>
-    <link rel="stylesheet" href="style.css">
-    <meta charset='utf-8'>
-</head>
-
-<body>
-```
-
-# Easy RISC-V
+---
+title: "Easy RISC-V"
+---
 
 An interactive introduction to RISC-V assembly programming, by
 [dramforever](https://github.com/dramforever).
@@ -18,7 +8,7 @@ An interactive introduction to RISC-V assembly programming, by
 Interested in the code? Want to report an issue? Check out the GitHub page:
 <https://github.com/dramforever/easyriscv>
 
-## Introduction
+# Introduction
 
 Inspired by [Easy 6502 by Nick Morgan][easy6502], this is a quick-ish
 introduction to RISC-V assembly programming. This introduction is intended for
@@ -93,7 +83,7 @@ like, namely handling exceptions and privilege levels.
 
 Let's get started.
 
-## My first RISC-V assembly program
+# My first RISC-V assembly program
 
 Throughout this article you will see emulator panes like these:
 
@@ -123,7 +113,7 @@ a0 (x10) 0x00000123
 And the emulator stopped. Congratulations, you've run your first RISC-V assembly
 program. First here, at least.
 
-## Emulator controls
+# Emulator controls
 
 'Start' assembles your code and, well, starts the emulator. If there's a problem
 with your code, it will tell you about it and the emulator will not start.
@@ -167,7 +157,7 @@ two checkboxes later.
 Now you may have also guessed that `addi x10, x0, 0x123` means `x10 = x0 +
 0x123`. As of `ebreak`, for now, just remember that `ebreak` stops the emulator.
 
-## Processor state
+# Processor state
 
 The [program counter]{x=term}, or [`pc`]{x=term} is the address of the current
 instruction. It points to the instruction to be executed.
@@ -187,7 +177,7 @@ MIPS and Arm AArch64. We will make good use of `x0` soon.
 the register view is provided as a convenience and is not part of the processor
 state.)
 
-## Instruction syntax
+# Instruction syntax
 
 But before we can start talking about instructions themselves, we need a way to
 talk about the [instruction syntax]{x=term} so I can, you know, write it down
@@ -219,12 +209,12 @@ add rd, rs1, rs2
 Some other instructions have no operands, like `ebreak`. Others have slightly
 more complex operands.
 
-## Computational instructions
+# Computational instructions
 
 Using the registers as a playground of numbers, we can use computational
 instructions to work with them.
 
-### Arithmetic instructions
+## Arithmetic instructions
 
 As we've seen above, you can get a RISC-V machine to add numbers together.
 
@@ -371,7 +361,7 @@ highest bit can't be put in the result. Since RISC-V doesn't have flag bits for
 carry or overflow, it's simply gone. The programmer is expected to deal with
 this.
 
-### Bitwise instructions
+## Bitwise instructions
 
 While we're talking about bits, another thing we can do about bits is doing
 bitwise logical operations on them.
@@ -453,7 +443,7 @@ though: adding one less works exactly right: `(a + 15) & -16`
     ebreak
 ```
 
-### Comparison instructions
+## Comparison instructions
 
 Usually when you write a comparison of some sort like `a == b` or `a >= b`, it's
 used as a condition for some `if` or loop, but... those things are complicated!
@@ -552,7 +542,7 @@ comparison)
 - `a == b`: `sub ; sltu x0`
 - `a != b`: `sub ; sltiu 1`
 
-### Shift instructions
+## Shift instructions
 
 There is no way I can do justice to the usage of bit shifts in the middle of a
 tutorial on RISC-V assembly. If you're here, you've probably heard of them.
@@ -634,7 +624,7 @@ parsing decimal numbers: `a * 10` can be rewritten as `(a << 1) + (a << 3)`:
     ebreak
 ```
 
-### That's it...?
+## That's it...?
 
 That's it?
 
@@ -652,7 +642,7 @@ For us... Honestly, I'm just glad we've been dealt a hand that we can tackle
 completely in full. There's no way I'm finishing writing this tutorial if RV32I
 wasn't so bare boned.
 
-### Summary of computational instructions
+## Summary of computational instructions
 
 (Operand `a` is `rs1`, and `b` is `rs2` or immediate. In the instruction name
 `[i]` means an immediate variant is available. Subscript `u` means unsigned and
@@ -671,7 +661,7 @@ wasn't so bare boned.
 | `srl[i]` | <code>a &gt;&gt;<sub>u</sub> b</code> | `[0, 31]` |
 | `sra[i]` | <code>a &gt;&gt;<sub>s</sub> b</code> | `[0, 31]` |
 
-## Intermission: Larger numbers
+# Intermission: Larger numbers
 
 The `addi` instruction has limit on the immediate value. How do we make bigger
 values?
@@ -720,7 +710,7 @@ case, the immediate operand to `addi` will have to be negative. However `%hi`
 understands this and adds one to compensate, so this `%hi`/`%lo` combination
 does work for everything.)
 
-## Jumps and branches
+# Jumps and branches
 
 So far, everything that we've had so far can be done on even the most basic
 programmer's calculator. To truly make a computer... do computer stuff, we'd
@@ -731,7 +721,7 @@ flow, and a [jump]{x=term} is an unconditional transfer of control flow.
 
 I think the branch instructions are slightly simpler, so let's start with those.
 
-### Branches
+## Branches
 
 All the branch instruction follow the form "If some comparison, go to
 somewhere." The conditions are:
@@ -801,7 +791,7 @@ later.)
 By the way, there's no `bgt[u]` or `ble[u]` because you can just swap `rs1` and
 `rs2` to get those.
 
-### Jumps
+## Jumps
 
 There are two jump instructions in RISC-V. One of them is [`jal`]{x=insn} "jump
 and link", which sets `rd` to the address of the following instruction, and then
@@ -905,7 +895,7 @@ range restrictions. You do need a free scratch register for the high part of the
 address though, but since RISC-V gives you 31 of them, this shouldn't be too
 much of a problem.
 
-## Jump and link
+# Jump and link
 
 What's the deal with the destination register then? What do you need the address
 of the next instruction for? For jumping *back* of course. We can use this
@@ -946,12 +936,12 @@ foo:
     ret
 ```
 
-## Memory
+# Memory
 
 That's a nice computer we have here. Now we have... all of 31 &times; 4 = 124
 bytes of storage in the form of registers to work with. I want more...
 
-### Basic memory accesses
+## Basic memory accesses
 
 The emulator has 1 MiB of memory starting at address `0x4000_0000`. That's
 `0x4000_0000` to `0x400f_ffff`, inclusive. The assembler starts assembling at
@@ -1084,7 +1074,7 @@ manually.
 
 <!-- TODO: I need some memory dump thing to make useful examples of `sw` -->
 
-### Smaller widths
+## Smaller widths
 
 Not everything in memory is word sized. You've already seen an array, which is
 multiple-word-sized. There are also stuff smaller than word-sized.
@@ -1224,7 +1214,7 @@ Now you can try translating some basic C code into RISC-V assembly. Functions
 are... still out of the questions for now. Variables have to be either global or
 put in registers. What else are we missing...
 
-### Memory-mapped I/O
+## Memory-mapped I/O
 
 Is it Hello World time? I think it's Hello World time...
 
@@ -1260,7 +1250,7 @@ Eh, close enough to a greeting the entire world. We could refactor it a bit to
 use a loop, or whatever... Now that we think about it, how about going one step
 further and organize our code into some functions?
 
-## Functions
+# Functions
 
 We already know how to call a function and return back. Namely, `jal` calls a
 function, and `ret` returns. Usually functions take arguments, uses local
@@ -1269,7 +1259,7 @@ general purpose registers, on account of them being, well, general purpose, we
 could just use any of them as we wish. Or we could follow the standard
 conventions.
 
-### Register aliases and calling conventions
+## Register aliases and calling conventions
 
 This whole time you probably have noticed that registers are listed with two
 names each, and indeed both work identically in assembly.
@@ -1381,7 +1371,7 @@ msg:
     .byte 0x6f, 0x72, 0x6c, 0x64, 0x21, 0x0a, 0x00
 ```
 
-### The stack
+## The stack
 
 Although we can write some very basic functions now, there are still a few
 problems:
@@ -1544,7 +1534,7 @@ acceptable from a calling convention perspective.
 (Note: In the emulator, the `sp` register is initialized to an address that
 would be convenient for you for use as a stack, as a, well, convenience.)
 
-## Intermission: Numeric labels
+# Intermission: Numeric labels
 
 Let's go back to this example:
 
@@ -1590,7 +1580,7 @@ puts:
 
 Yeah I don't really like this syntax either, but it is what we've got.
 
-## Position independence
+# Position independence
 
 Remember that oddball instruction I mentioned way back, `auipc`?
 
@@ -1718,15 +1708,93 @@ This expands to:
 Notice how `ra` is used as a temporary register to store the intermediate
 result, which is immediately overwritten by `jalr`.
 
-In fact, there really isn't any reason to *not* use `auipc` when using a label.
-This is why you if you disassemble a real RISC-V program, you see it everywhere,
-even in non-position-independent code.
+In fact, there really isn't any reason to prefer `lui` over `auipc` when using a
+label. This is why you if you disassemble a real RISC-V program, you see it
+everywhere, even in non-position-independent code.
 
 Now would be a good time to take a break, since we're ready to head into...
 
-## Privileged architecture
+# Privileged architecture fundamentals
 
 We're going to write an *extremely* bare bones operating system.
+
+## Privilege levels
+
+One of the tasks an operating system performs is to control what programs. On
+RISC-V, the most basics of this control is implemented using [privilege
+levels]{x=term}. RISC-V defines... let's just say, several privilege levels, but
+we're only going to use two here:
+
+- "[Machine]{x=term}", number 3
+- "[User]{x=term}", number 0
+
+The lower the privilege level number goes, the less privileged that level is.
+Higher privilege levels treat lower privilege levels as generally completely
+unreliable and untrusted, and must isolate themselves from adversarial software
+and failures of lower privilege levels.
+
+(However, we won't be talking about all of the features that make this full
+isolation possible, and the emulator you've been seeing does not have enough
+features for that anyway. Therefore, the operating system we'll be building will
+leave itself unprotected in various ways.)
+
+The privilege levels are sometimes called "[modes]{x=term}" for short. And, if
+that's not short enough, we can shorten the level names themselves, ending up
+with [M-mode]{x=term} and [U-mode]{x=term}. All of the ways to refer to these
+privilege levels are interchangable.
+
+When a RISC-V machine starts (This is known as "[reset]{x=term}"), it begins
+execution in Machine mode. On a typical "embedded" system where only Machine
+mode and User mode are implemented, execution begins in the initialization code
+read from flash memory. This code can either perform what needs to be done
+itself, or it can be an operating system that manages some tasks, each executing
+in User mode.
+
+The former design is used for simpler programs, and is analogous to the programs
+we've seen and run so far. The latter is more complicated. We'll see the basics
+of how to achieve that soon.
+
+## Control and status registers (CSRs)
+
+The [control and status registers]{x=term} ([CSRs]{x=term}) deal with various
+features that are in some sense "special". No I don't have a better explanation
+of what "special" means.
+
+## Counters
+
+Two basic read-only counters are [`cycle`]{x=csr} and [`instret`]{x=csr}. These
+counters, well, *count* the number of "cycles" and "instructions retired".
+"Retried" is a technical term basically meaning "successfully completed".
+
+Since a 32-bit counter will overflow quite fast, on RV32, the counters have
+"high" counterparts: [`cycleh`]{x=csr} and [`instreth`]{x=csr}. So, for example,
+the full cycle counter has 64 bits, with the lower 32 bits in `cycle` and higher
+32 bits in `cycleh`.
+
+On real hardware `cycle` is coupled to the clock cycle. In this emulator, every
+time you press "Step", it counts as a cycle. When you press "Run" and it starts,
+well, running, a certain number of cycles happen periodically. Let's look at a
+really simple example:
+
+```emulator
+    addi a0, a0, 1
+    addi a0, a0, 1
+    addi a0, a0, 1
+    ebreak
+```
+
+It takes 4 cycles for this program to stop, but `instret` ends up at only 3
+because the final `ebreak` instruction never actually completes.
+
+(Do not confuse "retired" with "retried".)
+
+## Privileged state
+
+# Exceptions
+
+# Lies and omissions
+
+# What's next?
 
 # Index
 
@@ -1737,6 +1805,9 @@ We're going to write an *extremely* bare bones operating system.
 :::
 
 ::: {index_of=regalias}
+:::
+
+::: {index_of=csr}
 :::
 
 ::: {index_of=insn}

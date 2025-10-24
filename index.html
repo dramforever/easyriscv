@@ -1,3 +1,5 @@
+<!DOCTYPE html>
+
 <head>
     <title>Easy RISC-V</title>
 
@@ -7,14 +9,103 @@
 </head>
 
 <body>
-<h1 id="easy-risc-v">Easy RISC-V</h1>
+
+    <header class="page-banner">Easy RISC-V</header>
+
+    <nav>
+        <ul>
+        <li><a href="#introduction"
+        id="toc-introduction">Introduction</a></li>
+        <li><a href="#my-first-risc-v-assembly-program"
+        id="toc-my-first-risc-v-assembly-program">My first RISC-V
+        assembly program</a></li>
+        <li><a href="#emulator-controls"
+        id="toc-emulator-controls">Emulator controls</a></li>
+        <li><a href="#processor-state"
+        id="toc-processor-state">Processor state</a></li>
+        <li><a href="#instruction-syntax"
+        id="toc-instruction-syntax">Instruction syntax</a></li>
+        <li><a href="#computational-instructions"
+        id="toc-computational-instructions">Computational
+        instructions</a>
+        <ul>
+        <li><a href="#arithmetic-instructions"
+        id="toc-arithmetic-instructions">Arithmetic
+        instructions</a></li>
+        <li><a href="#bitwise-instructions"
+        id="toc-bitwise-instructions">Bitwise instructions</a></li>
+        <li><a href="#comparison-instructions"
+        id="toc-comparison-instructions">Comparison
+        instructions</a></li>
+        <li><a href="#shift-instructions"
+        id="toc-shift-instructions">Shift instructions</a></li>
+        <li><a href="#thats-it" id="toc-thats-it">That’s it…?</a></li>
+        <li><a href="#summary-of-computational-instructions"
+        id="toc-summary-of-computational-instructions">Summary of
+        computational instructions</a></li>
+        </ul></li>
+        <li><a href="#intermission-larger-numbers"
+        id="toc-intermission-larger-numbers">Intermission: Larger
+        numbers</a></li>
+        <li><a href="#jumps-and-branches"
+        id="toc-jumps-and-branches">Jumps and branches</a>
+        <ul>
+        <li><a href="#branches" id="toc-branches">Branches</a></li>
+        <li><a href="#jumps" id="toc-jumps">Jumps</a></li>
+        </ul></li>
+        <li><a href="#jump-and-link" id="toc-jump-and-link">Jump and
+        link</a></li>
+        <li><a href="#memory" id="toc-memory">Memory</a>
+        <ul>
+        <li><a href="#basic-memory-accesses"
+        id="toc-basic-memory-accesses">Basic memory accesses</a></li>
+        <li><a href="#smaller-widths" id="toc-smaller-widths">Smaller
+        widths</a></li>
+        <li><a href="#memory-mapped-io"
+        id="toc-memory-mapped-io">Memory-mapped I/O</a></li>
+        </ul></li>
+        <li><a href="#functions" id="toc-functions">Functions</a>
+        <ul>
+        <li><a href="#register-aliases-and-calling-conventions"
+        id="toc-register-aliases-and-calling-conventions">Register
+        aliases and calling conventions</a></li>
+        <li><a href="#the-stack" id="toc-the-stack">The stack</a></li>
+        </ul></li>
+        <li><a href="#intermission-numeric-labels"
+        id="toc-intermission-numeric-labels">Intermission: Numeric
+        labels</a></li>
+        <li><a href="#position-independence"
+        id="toc-position-independence">Position independence</a></li>
+        <li><a href="#privileged-architecture-fundamentals"
+        id="toc-privileged-architecture-fundamentals">Privileged
+        architecture fundamentals</a>
+        <ul>
+        <li><a href="#privilege-levels"
+        id="toc-privilege-levels">Privilege levels</a></li>
+        <li><a href="#control-and-status-registers-csrs"
+        id="toc-control-and-status-registers-csrs">Control and status
+        registers (CSRs)</a></li>
+        <li><a href="#counters" id="toc-counters">Counters</a></li>
+        <li><a href="#privileged-state"
+        id="toc-privileged-state">Privileged state</a></li>
+        </ul></li>
+        <li><a href="#exceptions"
+        id="toc-exceptions">Exceptions</a></li>
+        <li><a href="#lies-and-omissions"
+        id="toc-lies-and-omissions">Lies and omissions</a></li>
+        <li><a href="#whats-next" id="toc-whats-next">What’s
+        next?</a></li>
+        <li><a href="#index" id="toc-index">Index</a></li>
+        </ul>
+    </nav>
+
 <p>An interactive introduction to RISC-V assembly programming, by <a
 href="https://github.com/dramforever">dramforever</a>.</p>
 <p>Interested in the code? Want to report an issue? Check out the GitHub
 page: <a href="https://github.com/dramforever/easyriscv"
 class="uri">https://github.com/dramforever/easyriscv</a></p>
-<h2 id="introduction"><a href="#introduction" class="anchor-link"
-aria-hidden="true">⋄</a>Introduction</h2>
+<h1 id="introduction"><a href="#introduction" class="anchor-link"
+aria-hidden="true"></a>Introduction</h1>
 <p>Inspired by <a href="https://skilldrick.github.io/easy6502/">Easy
 6502 by Nick Morgan</a>, this is a quick-ish introduction to RISC-V
 assembly programming. This introduction is intended for those with a
@@ -77,9 +168,9 @@ processor would do.</p>
 <p>You will also catch a glimpse of what creating an operating system on
 RISC-V is like, namely handling exceptions and privilege levels.</p>
 <p>Let’s get started.</p>
-<h2 id="my-first-risc-v-assembly-program"><a
+<h1 id="my-first-risc-v-assembly-program"><a
 href="#my-first-risc-v-assembly-program" class="anchor-link"
-aria-hidden="true">⋄</a>My first RISC-V assembly program</h2>
+aria-hidden="true"></a>My first RISC-V assembly program</h1>
 <p>Throughout this article you will see emulator panes like these:</p>
 <p>(If you just see a code block, there’s a JavaScript problem. Make
 sure you’ve enabled JavaScript, probably…)</p>
@@ -96,8 +187,8 @@ emulator. Now click on ‘Run’. You’ll notice that:</p>
 <pre><code>a0 (x10) 0x00000123</code></pre>
 <p>And the emulator stopped. Congratulations, you’ve run your first
 RISC-V assembly program. First here, at least.</p>
-<h2 id="emulator-controls"><a href="#emulator-controls"
-class="anchor-link" aria-hidden="true">⋄</a>Emulator controls</h2>
+<h1 id="emulator-controls"><a href="#emulator-controls"
+class="anchor-link" aria-hidden="true"></a>Emulator controls</h1>
 <p>‘Start’ assembles your code and, well, starts the emulator. If
 there’s a problem with your code, it will tell you about it and the
 emulator will not start.</p>
@@ -132,8 +223,8 @@ instructions, labels, and the two checkboxes later.</p>
 <p>Now you may have also guessed that <code>addi x10, x0, 0x123</code>
 means <code>x10 = x0 + 0x123</code>. As of <code>ebreak</code>, for now,
 just remember that <code>ebreak</code> stops the emulator.</p>
-<h2 id="processor-state"><a href="#processor-state" class="anchor-link"
-aria-hidden="true">⋄</a>Processor state</h2>
+<h1 id="processor-state"><a href="#processor-state" class="anchor-link"
+aria-hidden="true"></a>Processor state</h1>
 <p>The <span id="term-program-counter"><em>program counter</em></span>,
 or <span id="term-pc"><em><code>pc</code></em></span> is the address of
 the current instruction. It points to the instruction to be
@@ -152,8 +243,8 @@ MIPS and Arm AArch64. We will make good use of <code>x0</code> soon.</p>
 <p>(Note: In the emulator, the instruction listed in parenthesis next to
 <code>pc</code> in the register view is provided as a convenience and is
 not part of the processor state.)</p>
-<h2 id="instruction-syntax"><a href="#instruction-syntax"
-class="anchor-link" aria-hidden="true">⋄</a>Instruction syntax</h2>
+<h1 id="instruction-syntax"><a href="#instruction-syntax"
+class="anchor-link" aria-hidden="true"></a>Instruction syntax</h1>
 <p>But before we can start talking about instructions themselves, we
 need a way to talk about the <span
 id="term-instruction-syntax"><em>instruction syntax</em></span> so I
@@ -179,12 +270,13 @@ non-immediate <code>add</code> instruction has this syntax:</p>
 <pre><code>add rd, rs1, rs2</code></pre>
 <p>Some other instructions have no operands, like <code>ebreak</code>.
 Others have slightly more complex operands.</p>
-<h2 id="computational-instructions"><a
+<h1 id="computational-instructions"><a
 href="#computational-instructions" class="anchor-link"
-aria-hidden="true">⋄</a>Computational instructions</h2>
+aria-hidden="true"></a>Computational instructions</h1>
 <p>Using the registers as a playground of numbers, we can use
 computational instructions to work with them.</p>
-<h3 id="arithmetic-instructions">Arithmetic instructions</h3>
+<h2 id="arithmetic-instructions"><a href="#arithmetic-instructions"
+class="anchor-link" aria-hidden="true"></a>Arithmetic instructions</h2>
 <p>As we’ve seen above, you can get a RISC-V machine to add numbers
 together.</p>
 <p>The <span id="insn-addi"><em><code>addi</code></em></span>
@@ -311,7 +403,8 @@ get to <code>0x9180_0000</code>, in the next iteration it turns into
 33 bits in binary, so the highest bit can’t be put in the result. Since
 RISC-V doesn’t have flag bits for carry or overflow, it’s simply gone.
 The programmer is expected to deal with this.</p>
-<h3 id="bitwise-instructions">Bitwise instructions</h3>
+<h2 id="bitwise-instructions"><a href="#bitwise-instructions"
+class="anchor-link" aria-hidden="true"></a>Bitwise instructions</h2>
 <p>While we’re talking about bits, another thing we can do about bits is
 doing bitwise logical operations on them.</p>
 <p>The <span id="insn-and"><em><code>and</code></em></span> instruction
@@ -384,7 +477,8 @@ enough to fix though: adding one less works exactly right:
     andi x12, x12, -16
     ebreak
 </div>
-<h3 id="comparison-instructions">Comparison instructions</h3>
+<h2 id="comparison-instructions"><a href="#comparison-instructions"
+class="anchor-link" aria-hidden="true"></a>Comparison instructions</h2>
 <p>Usually when you write a comparison of some sort like
 <code>a == b</code> or <code>a &gt;= b</code>, it’s used as a condition
 for some <code>if</code> or loop, but… those things are complicated!
@@ -475,7 +569,8 @@ comparison and nothing for signed comparison)</p>
 <li><code>a == b</code>: <code>sub ; sltu x0</code></li>
 <li><code>a != b</code>: <code>sub ; sltiu 1</code></li>
 </ul>
-<h3 id="shift-instructions">Shift instructions</h3>
+<h2 id="shift-instructions"><a href="#shift-instructions"
+class="anchor-link" aria-hidden="true"></a>Shift instructions</h2>
 <p>There is no way I can do justice to the usage of bit shifts in the
 middle of a tutorial on RISC-V assembly. If you’re here, you’ve probably
 heard of them. There’s nothing really special to the way they appear in
@@ -546,7 +641,8 @@ rewritten as <code>(a &lt;&lt; 1) + (a &lt;&lt; 3)</code>:</p>
 
     ebreak
 </div>
-<h3 id="thats-it">That’s it…?</h3>
+<h2 id="thats-it"><a href="#thats-it" class="anchor-link"
+aria-hidden="true"></a>That’s it…?</h2>
 <p>That’s it?</p>
 <p>You may have noticed some glaring omissions. What we’ve learned
 doesn’t even cover grade school math: multiplication and division are
@@ -562,8 +658,9 @@ have too much freedom.</p>
 <p>For us… Honestly, I’m just glad we’ve been dealt a hand that we can
 tackle completely in full. There’s no way I’m finishing writing this
 tutorial if RV32I wasn’t so bare boned.</p>
-<h3 id="summary-of-computational-instructions">Summary of computational
-instructions</h3>
+<h2 id="summary-of-computational-instructions"><a
+href="#summary-of-computational-instructions" class="anchor-link"
+aria-hidden="true"></a>Summary of computational instructions</h2>
 <p>(Operand <code>a</code> is <code>rs1</code>, and <code>b</code> is
 <code>rs2</code> or immediate. In the instruction name <code>[i]</code>
 means an immediate variant is available. Subscript <code>u</code> means
@@ -634,9 +731,9 @@ unsigned and <code>s</code> means two’s complement signed.)</p>
 </tr>
 </tbody>
 </table>
-<h2 id="intermission-larger-numbers"><a
+<h1 id="intermission-larger-numbers"><a
 href="#intermission-larger-numbers" class="anchor-link"
-aria-hidden="true">⋄</a>Intermission: Larger numbers</h2>
+aria-hidden="true"></a>Intermission: Larger numbers</h1>
 <p>The <code>addi</code> instruction has limit on the immediate value.
 How do we make bigger values?</p>
 <p>The <span id="insn-lui"><em><code>lui</code></em></span> (“load upper
@@ -677,8 +774,8 @@ set. In that case, the immediate operand to <code>addi</code> will have
 to be negative. However <code>%hi</code> understands this and adds one
 to compensate, so this <code>%hi</code>/<code>%lo</code> combination
 does work for everything.)</p>
-<h2 id="jumps-and-branches"><a href="#jumps-and-branches"
-class="anchor-link" aria-hidden="true">⋄</a>Jumps and branches</h2>
+<h1 id="jumps-and-branches"><a href="#jumps-and-branches"
+class="anchor-link" aria-hidden="true"></a>Jumps and branches</h1>
 <p>So far, everything that we’ve had so far can be done on even the most
 basic programmer’s calculator. To truly make a computer… do computer
 stuff, we’d want loops and conditionals.</p>
@@ -688,7 +785,8 @@ id="term-jump"><em>jump</em></span> is an unconditional transfer of
 control flow.</p>
 <p>I think the branch instructions are slightly simpler, so let’s start
 with those.</p>
-<h3 id="branches">Branches</h3>
+<h2 id="branches"><a href="#branches" class="anchor-link"
+aria-hidden="true"></a>Branches</h2>
 <p>All the branch instruction follow the form “If some comparison, go to
 somewhere.” The conditions are:</p>
 <ul>
@@ -754,7 +852,8 @@ see what is later.)</p>
 <p>By the way, there’s no <code>bgt[u]</code> or <code>ble[u]</code>
 because you can just swap <code>rs1</code> and <code>rs2</code> to get
 those.</p>
-<h3 id="jumps">Jumps</h3>
+<h2 id="jumps"><a href="#jumps" class="anchor-link"
+aria-hidden="true"></a>Jumps</h2>
 <p>There are two jump instructions in RISC-V. One of them is <span
 id="insn-jal"><em><code>jal</code></em></span> “jump and link”, which
 sets <code>rd</code> to the address of the following instruction, and
@@ -842,8 +941,8 @@ this two-instruction combo can jump to any address, free from range
 restrictions. You do need a free scratch register for the high part of
 the address though, but since RISC-V gives you 31 of them, this
 shouldn’t be too much of a problem.</p>
-<h2 id="jump-and-link"><a href="#jump-and-link" class="anchor-link"
-aria-hidden="true">⋄</a>Jump and link</h2>
+<h1 id="jump-and-link"><a href="#jump-and-link" class="anchor-link"
+aria-hidden="true"></a>Jump and link</h1>
 <p>What’s the deal with the destination register then? What do you need
 the address of the next instruction for? For jumping <em>back</em> of
 course. We can use this functionality to call functions and return
@@ -879,11 +978,12 @@ foo:
     add x10, x10, x10
     ret
 </div>
-<h2 id="memory"><a href="#memory" class="anchor-link"
-aria-hidden="true">⋄</a>Memory</h2>
+<h1 id="memory"><a href="#memory" class="anchor-link"
+aria-hidden="true"></a>Memory</h1>
 <p>That’s a nice computer we have here. Now we have… all of 31 × 4 = 124
 bytes of storage in the form of registers to work with. I want more…</p>
-<h3 id="basic-memory-accesses">Basic memory accesses</h3>
+<h2 id="basic-memory-accesses"><a href="#basic-memory-accesses"
+class="anchor-link" aria-hidden="true"></a>Basic memory accesses</h2>
 <p>The emulator has 1 MiB of memory starting at address
 <code>0x4000_0000</code>. That’s <code>0x4000_0000</code> to
 <code>0x400f_ffff</code>, inclusive. The assembler starts assembling at
@@ -996,7 +1096,8 @@ because the addresses are all byte addresses, and one word is four
 bytes. In C, the compiler handles the multiplier for you, but in
 assembly you have to remember to do it manually.</p>
 <!-- TODO: I need some memory dump thing to make useful examples of `sw` -->
-<h3 id="smaller-widths">Smaller widths</h3>
+<h2 id="smaller-widths"><a href="#smaller-widths" class="anchor-link"
+aria-hidden="true"></a>Smaller widths</h2>
 <p>Not everything in memory is word sized. You’ve already seen an array,
 which is multiple-word-sized. There are also stuff smaller than
 word-sized.</p>
@@ -1122,7 +1223,8 @@ test:
 <p>Now you can try translating some basic C code into RISC-V assembly.
 Functions are… still out of the questions for now. Variables have to be
 either global or put in registers. What else are we missing…</p>
-<h3 id="memory-mapped-io">Memory-mapped I/O</h3>
+<h2 id="memory-mapped-io"><a href="#memory-mapped-io"
+class="anchor-link" aria-hidden="true"></a>Memory-mapped I/O</h2>
 <p>Is it Hello World time? I think it’s Hello World time…</p>
 <p>For a computer to not just be a space heater, we need some way for it
 to at least generate output and take input. While other architectures
@@ -1153,8 +1255,8 @@ bits as a byte to the text in the output pane. In other words, a
 <p>Eh, close enough to a greeting the entire world. We could refactor it
 a bit to use a loop, or whatever… Now that we think about it, how about
 going one step further and organize our code into some functions?</p>
-<h2 id="functions"><a href="#functions" class="anchor-link"
-aria-hidden="true">⋄</a>Functions</h2>
+<h1 id="functions"><a href="#functions" class="anchor-link"
+aria-hidden="true"></a>Functions</h1>
 <p>We already know how to call a function and return back. Namely,
 <code>jal</code> calls a function, and <code>ret</code> returns. Usually
 functions take arguments, uses local variables, and returns results.
@@ -1162,8 +1264,9 @@ Since there’s no real difference between the 31 general purpose
 registers, on account of them being, well, general purpose, we could
 just use any of them as we wish. Or we could follow the standard
 conventions.</p>
-<h3 id="register-aliases-and-calling-conventions">Register aliases and
-calling conventions</h3>
+<h2 id="register-aliases-and-calling-conventions"><a
+href="#register-aliases-and-calling-conventions" class="anchor-link"
+aria-hidden="true"></a>Register aliases and calling conventions</h2>
 <p>This whole time you probably have noticed that registers are listed
 with two names each, and indeed both work identically in assembly.</p>
 <div class="emulator-disabled">
@@ -1276,7 +1379,8 @@ msg:
     .byte 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77
     .byte 0x6f, 0x72, 0x6c, 0x64, 0x21, 0x0a, 0x00
 </div>
-<h3 id="the-stack">The stack</h3>
+<h2 id="the-stack"><a href="#the-stack" class="anchor-link"
+aria-hidden="true"></a>The stack</h2>
 <p>Although we can write some very basic functions now, there are still
 a few problems:</p>
 <ul>
@@ -1412,9 +1516,9 @@ perspective.</p>
 <p>(Note: In the emulator, the <code>sp</code> register is initialized
 to an address that would be convenient for you for use as a stack, as a,
 well, convenience.)</p>
-<h2 id="intermission-numeric-labels"><a
+<h1 id="intermission-numeric-labels"><a
 href="#intermission-numeric-labels" class="anchor-link"
-aria-hidden="true">⋄</a>Intermission: Numeric labels</h2>
+aria-hidden="true"></a>Intermission: Numeric labels</h1>
 <p>Let’s go back to this example:</p>
 <pre><code>    # void puts(const char *);
 puts:
@@ -1451,8 +1555,8 @@ puts:
     ret</code></pre>
 <p>Yeah I don’t really like this syntax either, but it is what we’ve
 got.</p>
-<h2 id="position-independence"><a href="#position-independence"
-class="anchor-link" aria-hidden="true">⋄</a>Position independence</h2>
+<h1 id="position-independence"><a href="#position-independence"
+class="anchor-link" aria-hidden="true"></a>Position independence</h1>
 <p>Remember that oddball instruction I mentioned way back,
 <code>auipc</code>?</p>
 <p>I don’t know about your experience, but the first time I saw RISC-V
@@ -1561,23 +1665,108 @@ id="insn-call"><em><code>call</code></em></span> for that.</p>
 <p>Notice how <code>ra</code> is used as a temporary register to store
 the intermediate result, which is immediately overwritten by
 <code>jalr</code>.</p>
-<p>In fact, there really isn’t any reason to <em>not</em> use
-<code>auipc</code> when using a label. This is why you if you
+<p>In fact, there really isn’t any reason to prefer <code>lui</code>
+over <code>auipc</code> when using a label. This is why you if you
 disassemble a real RISC-V program, you see it everywhere, even in
 non-position-independent code.</p>
 <p>Now would be a good time to take a break, since we’re ready to head
 into…</p>
-<h2 id="privileged-architecture"><a href="#privileged-architecture"
-class="anchor-link" aria-hidden="true">⋄</a>Privileged architecture</h2>
+<h1 id="privileged-architecture-fundamentals"><a
+href="#privileged-architecture-fundamentals" class="anchor-link"
+aria-hidden="true"></a>Privileged architecture fundamentals</h1>
 <p>We’re going to write an <em>extremely</em> bare bones operating
 system.</p>
-<h1 id="index">Index</h1>
+<h2 id="privilege-levels"><a href="#privilege-levels"
+class="anchor-link" aria-hidden="true"></a>Privilege levels</h2>
+<p>One of the tasks an operating system performs is to control what
+programs. On RISC-V, the most basics of this control is implemented
+using <span id="term-privilege-levels"><em>privilege levels</em></span>.
+RISC-V defines… let’s just say, several privilege levels, but we’re only
+going to use two here:</p>
+<ul>
+<li>“<span id="term-machine"><em>Machine</em></span>”, number 3</li>
+<li>“<span id="term-user"><em>User</em></span>”, number 0</li>
+</ul>
+<p>The lower the privilege level number goes, the less privileged that
+level is. Higher privilege levels treat lower privilege levels as
+generally completely unreliable and untrusted, and must isolate
+themselves from adversarial software and failures of lower privilege
+levels.</p>
+<p>(However, we won’t be talking about all of the features that make
+this full isolation possible, and the emulator you’ve been seeing does
+not have enough features for that anyway. Therefore, the operating
+system we’ll be building will leave itself unprotected in various
+ways.)</p>
+<p>The privilege levels are sometimes called “<span
+id="term-modes"><em>modes</em></span>” for short. And, if that’s not
+short enough, we can shorten the level names themselves, ending up with
+<span id="term-m-mode"><em>M-mode</em></span> and <span
+id="term-u-mode"><em>U-mode</em></span>. All of the ways to refer to
+these privilege levels are interchangable.</p>
+<p>When a RISC-V machine starts (This is known as “<span
+id="term-reset"><em>reset</em></span>”), it begins execution in Machine
+mode. On a typical “embedded” system where only Machine mode and User
+mode are implemented, execution begins in the initialization code read
+from flash memory. This code can either perform what needs to be done
+itself, or it can be an operating system that manages some tasks, each
+executing in User mode.</p>
+<p>The former design is used for simpler programs, and is analogous to
+the programs we’ve seen and run so far. The latter is more complicated.
+We’ll see the basics of how to achieve that soon.</p>
+<h2 id="control-and-status-registers-csrs"><a
+href="#control-and-status-registers-csrs" class="anchor-link"
+aria-hidden="true"></a>Control and status registers (CSRs)</h2>
+<p>The <span id="term-control-and-status-registers"><em>control and
+status registers</em></span> (<span id="term-csrs"><em>CSRs</em></span>)
+deal with various features that are in some sense “special”. No I don’t
+have a better explanation of what “special” means.</p>
+<h2 id="counters"><a href="#counters" class="anchor-link"
+aria-hidden="true"></a>Counters</h2>
+<p>Two basic read-only counters are <span
+id="csr-cycle"><em><code>cycle</code></em></span> and <span
+id="csr-instret"><em><code>instret</code></em></span>. These counters,
+well, <em>count</em> the number of “cycles” and “instructions retired”.
+“Retried” is a technical term basically meaning “successfully
+completed”.</p>
+<p>Since a 32-bit counter will overflow quite fast, on RV32, the
+counters have “high” counterparts: <span
+id="csr-cycleh"><em><code>cycleh</code></em></span> and <span
+id="csr-instreth"><em><code>instreth</code></em></span>. So, for
+example, the full cycle counter has 64 bits, with the lower 32 bits in
+<code>cycle</code> and higher 32 bits in <code>cycleh</code>.</p>
+<p>On real hardware <code>cycle</code> is coupled to the clock cycle. In
+this emulator, every time you press “Step”, it counts as a cycle. When
+you press “Run” and it starts, well, running, a certain number of cycles
+happen periodically. Let’s look at a really simple example:</p>
+<div class="emulator-disabled">
+    addi a0, a0, 1
+    addi a0, a0, 1
+    addi a0, a0, 1
+    ebreak
+</div>
+<p>It takes 4 cycles for this program to stop, but <code>instret</code>
+ends up at only 3 because the final <code>ebreak</code> instruction
+never actually completes.</p>
+<p>(Do not confuse “retired” with “retried”.)</p>
+<h2 id="privileged-state"><a href="#privileged-state"
+class="anchor-link" aria-hidden="true"></a>Privileged state</h2>
+<h1 id="exceptions"><a href="#exceptions" class="anchor-link"
+aria-hidden="true"></a>Exceptions</h1>
+<h1 id="lies-and-omissions"><a href="#lies-and-omissions"
+class="anchor-link" aria-hidden="true"></a>Lies and omissions</h1>
+<h1 id="whats-next"><a href="#whats-next" class="anchor-link"
+aria-hidden="true"></a>What’s next?</h1>
+<h1 id="index"><a href="#index" class="anchor-link"
+aria-hidden="true"></a>Index</h1>
 <ul>
 <li><a href="#term-align">align</a></li>
 <li><a href="#term-aligned">aligned</a></li>
 <li><a href="#term-branch">branch</a></li>
 <li><a href="#term-byte">byte</a></li>
 <li><a href="#term-call-saved">call-saved</a></li>
+<li><a href="#term-control-and-status-registers">control and status
+registers</a></li>
+<li><a href="#term-csrs">CSRs</a></li>
 <li><a href="#term-destination-register">destination register</a></li>
 <li><a href="#term-devices">devices</a></li>
 <li><a href="#term-directive">directive</a></li>
@@ -1591,7 +1780,10 @@ registers</a></li>
 <li><a href="#term-instruction-syntax">instruction syntax</a></li>
 <li><a href="#term-jump">jump</a></li>
 <li><a href="#term-load">load</a></li>
+<li><a href="#term-m-mode">M-mode</a></li>
+<li><a href="#term-machine">Machine</a></li>
 <li><a href="#term-memory-mapped-i/o">memory mapped I/O</a></li>
+<li><a href="#term-modes">modes</a></li>
 <li><a href="#term-numeric-labels">numeric labels</a></li>
 <li><a href="#term-pc"><code>pc</code></a></li>
 <li><a href="#term-pc-relative-addressing">pc-relative
@@ -1599,10 +1791,12 @@ addressing</a></li>
 <li><a href="#term-pic">PIC</a></li>
 <li><a href="#term-position-independent-code">position independent
 code</a></li>
+<li><a href="#term-privilege-levels">privilege levels</a></li>
 <li><a href="#term-program-counter">program counter</a></li>
 <li><a href="#term-pseudoinstructions">pseudoinstructions</a></li>
 <li><a href="#term-rd"><code>rd</code></a></li>
 <li><a href="#term-register-aliases">register aliases</a></li>
+<li><a href="#term-reset">reset</a></li>
 <li><a href="#term-rs1"><code>rs1</code></a></li>
 <li><a href="#term-rs2"><code>rs2</code></a></li>
 <li><a href="#term-sign-extension">sign extension</a></li>
@@ -1610,6 +1804,8 @@ code</a></li>
 <li><a href="#term-stack">stack</a></li>
 <li><a href="#term-store">store</a></li>
 <li><a href="#term-two’s-complement">two’s complement</a></li>
+<li><a href="#term-u-mode">U-mode</a></li>
+<li><a href="#term-user">User</a></li>
 <li><a href="#term-word">word</a></li>
 <li><a href="#term-zero-extension">zero extension</a></li>
 </ul>
@@ -1630,6 +1826,12 @@ code</a></li>
 <code>t6</code></a></li>
 <li><a href="#regalias-tp"><code>tp</code></a></li>
 <li><a href="#regalias-zero"><code>zero</code></a></li>
+</ul>
+<ul>
+<li><a href="#csr-cycle"><code>cycle</code></a></li>
+<li><a href="#csr-cycleh"><code>cycleh</code></a></li>
+<li><a href="#csr-instret"><code>instret</code></a></li>
+<li><a href="#csr-instreth"><code>instreth</code></a></li>
 </ul>
 <ul>
 <li><a href="#insn-add"><code>add</code></a></li>
@@ -1690,3 +1892,4 @@ code</a></li>
 <li><a href="#rel-%pcrel_hi()"><code>%pcrel_hi()</code></a></li>
 <li><a href="#rel-%pcrel_lo()"><code>%pcrel_lo()</code></a></li>
 </ul>
+</body>
