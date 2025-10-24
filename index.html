@@ -185,7 +185,7 @@ architecture allows you to make use of the existing and growing software
 ecosystem instead of having to maintain your own.</li>
 </ul>
 <p>RISC-V is less mature than more established architectures like x86 or
-Arm, but it is already gaining steam real quick and has found great
+Arm, but it is quickly gaining steam and has found great
 success in many areas of application, such as embedded systems, custom
 processors, education, and research.</p>
 <p>This article will cover the 32-bit bare bones RV32I_Zicsr instruction
@@ -197,7 +197,7 @@ consider what we have here a “complete” instruction set. For example,
 Rust has <a
 href="https://doc.rust-lang.org/nightly/rustc/platform-support/riscv32-unknown-none-elf.html">Tier
 2 support</a> for the target <code>riscv32i-unknown-none-elf</code>
-which actually works completely fine with only the instructions we’ll
+which works completely with only the instructions we’ll
 cover here.</p>
 <p>Speaking of instructions we will cover, why don’t we meet the 45 of
 them right here and now:</p>
@@ -271,7 +271,7 @@ the four bytes of <code>addi</code> are actually
 <p>We’ll talk in detail about all of <code>pc</code>, registers,
 instructions, labels, and the two checkboxes later.</p>
 <p>Now you may have also guessed that <code>addi x10, x0, 0x123</code>
-means <code>x10 = x0 + 0x123</code>. As of <code>ebreak</code>, for now,
+means <code>x10 = x0 + 0x123</code>. As for <code>ebreak</code>, for now,
 just remember that <code>ebreak</code> stops the emulator.</p>
 <h1 id="processor-state"><a href="#processor-state" class="anchor-link"
 aria-hidden="true"></a>Processor state</h1>
@@ -288,7 +288,7 @@ id="reg-x1-through-x31"><em><code>x1</code> through
 special “zero register”. For computational instructions, you can use
 <code>x0</code> anywhere a register is expected. Reading it always gives
 zero, and writing to it just gets ignored. The use of a special register
-simplifies the design of the architecture, and this use is shared by
+simplifies the design of the architecture, and this design is shared by
 MIPS and Arm AArch64. We will make good use of <code>x0</code> soon.</p>
 <p>(Note: In the emulator, the instruction listed in parenthesis next to
 <code>pc</code> in the register view is provided as a convenience and is
@@ -362,8 +362,8 @@ subtractions:</p>
     ebreak
 </div>
 <p>One thing you should note is that the immediate value has a limited
-range, namely <code>[-2048, 2047]</code>, the range of a 12-bit two’s
-complement signed integer. This is because RV32I uses fixed 32-bit
+range, namely <code>[-2048, 2047]</code>.  This is the range of a 12-bit two’s
+complement signed integer. This limitation is because RV32I uses fixed 32-bit
 i.e. 4-byte instructions, and only the top 12 bits are available to
 encode an immediate value. You can see the hexadecimal value encoded in
 the instruction from the ‘Dump’. This article will not go into much
@@ -386,7 +386,7 @@ nothing. The <span id="insn-mv"><em><code>mv</code></em></span> (“move”)
 pseudoinstruction copies the value from <code>rs1</code> to
 <code>rd</code>. It expands to <code>addi rd, rs1, 0</code>.</p>
 <pre><code>mv rd, rs1</code></pre>
-<p>Using the pseudoinstruction vs the “real” instruction are equivalent.
+<p>Using the pseudoinstruction is exactly equivalent to using the “real” instruction.
 You can see in the dump that the two are assembled exactly the same
 way.</p>
 <div class="emulator-disabled">
@@ -398,7 +398,7 @@ way.</p>
 
     ebreak
 </div>
-<p>Subtracting from zero is negation. What’s negative of
+<p>Subtracting from zero is negation. What’s the negative of
 <code>0x123</code>?</p>
 <div class="emulator-disabled">
     li x10, 0x123
@@ -408,10 +408,10 @@ way.</p>
 </div>
 <p>Hmm, we get <code>0xfffffccd</code>. That’s the 32-bit <span
 id="term-two’s-complement"><em>two’s complement</em></span>
-representation of <code>-291</code> or <code>-0x123</code>. There’s
+representation of <code>-291</code>, or <code>-0x123</code>. There’s
 plenty of tutorials on this out there, so we’ll just note that whenever
 something is “signed”, RISC-V uses two’s complement representation. The
-benefit of this is that there’s less instructions for separate signed
+benefit of this is that there are fewer instructions for separate signed
 and unsigned instructions — both signed and unsigned numbers have the
 same overflow wrap-around behavior.</p>
 <p>Speaking of overflow wrap-around, what happens if we add something
@@ -448,15 +448,15 @@ double <code>0x123</code> and see what happens:</p>
 </div>
 <p>As <code>0x123</code> crawls up to the upper bits and eventually we
 get to <code>0x9180_0000</code>, in the next iteration it turns into
-<code>0x2300_0000</code>. There was an overflow! Double of
-<code>0x9180_0000</code> is <code>0x1_2300_0000</code>, but that needs
+<code>0x2300_0000</code>. There was an overflow! Doubling
+<code>0x9180_0000</code> gives <code>0x1_2300_0000</code>, but that needs
 33 bits in binary, so the highest bit can’t be put in the result. Since
 RISC-V doesn’t have flag bits for carry or overflow, it’s simply gone.
 The programmer is expected to deal with this.</p>
 <h2 id="bitwise-instructions"><a href="#bitwise-instructions"
 class="anchor-link" aria-hidden="true"></a>Bitwise instructions</h2>
-<p>While we’re talking about bits, another thing we can do about bits is
-doing bitwise logical operations on them.</p>
+<p>While we’re talking about bits, another thing we can do with bits is
+perform bitwise logical operations on them.</p>
 <p>The <span id="insn-and"><em><code>and</code></em></span> instruction
 performs a bitwise-“and” between the bits of <code>rs1</code> and
 <code>rs2</code> and puts the result in <code>rd</code>. The <span
@@ -532,7 +532,7 @@ class="anchor-link" aria-hidden="true"></a>Comparison instructions</h2>
 <p>Usually when you write a comparison of some sort like
 <code>a == b</code> or <code>a &gt;= b</code>, it’s used as a condition
 for some <code>if</code> or loop, but… those things are complicated!
-We’re getting to it later.</p>
+We’ll get to it later.</p>
 <p>Sometimes you just want a boolean value out of a comparison. The C
 convention uses 1 for true and 0 for false, and since the world runs on
 C now, that’s what RISC-V provides.</p>
@@ -703,10 +703,10 @@ as said in the introduction, RV32I is the barest bones of the barest
 bones we’ve got. Forcing everyone to make their processors with
 multiplication and division even for tasks that don’t need them would
 waste silicon area and money on every chip. Instead those making RISC-V
-processors have great freedom to choose, and indeed some would say, they
+processors have great freedom to choose, and indeed some would say they
 have too much freedom.</p>
 <p>For us… Honestly, I’m just glad we’ve been dealt a hand that we can
-tackle completely in full. There’s no way I’m finishing writing this
+tackle completely in full. There’s no way I’d finish writing this
 tutorial if RV32I wasn’t so bare boned.</p>
 <h2 id="summary-of-computational-instructions"><a
 href="#summary-of-computational-instructions" class="anchor-link"
@@ -927,8 +927,9 @@ instructions do is jumping. We can use it instead of the branch
 instructions for an unconditional jump.</p>
 <div class="emulator-disabled">
 loop:
-    # Yes this is an infinite loop. You can
-    # see that we execute this one
+    # Yes this is an infinite loop.
+    # You can see that
+    # we execute this one
     # instruction over and over
     jal x0, loop
 </div>
@@ -936,15 +937,15 @@ loop:
 id="insn-j"><em><code>j</code></em></span> (“jump”) is for
 <code>jal</code> with <code>rd</code> being <code>x0</code>:</p>
 <pre><code>j label</code></pre>
-<p>As of why you would want to do this… Well, we only have 32 bits per
-instruction, and since the <code>jal</code> instruction only needs one
+<p>As for why you would want to do this… Well, we only have 32 bits per
+instruction. Since the <code>jal</code> instruction only needs one
 register number instead of the branch instructions’ two, and it doesn’t
 need a condition, the instruction encoding permits jumping over a longer
 range. So this is always preferred over something like
 <code>beq x0, x0, label</code> for a jump.</p>
-<p>As of <code>jalr</code>, you can jump to an address that’s stored in
+<p>As for <code>jalr</code>, you can jump to an address that’s stored in
 a register. In C, that would be dealing with function pointers. You’d
-need this any time where a dynamic dispatch is needed. For example, we
+need this any time dynamic dispatch is needed. For example, we
 load the address of <code>foo</code> into a register first before
 jumping to it.</p>
 <div class="emulator-disabled">
@@ -1157,7 +1158,7 @@ the middle is the <span id="term-halfword"><em>halfword</em></span>,
 which is 2-byte/16-bit and written <code>[u]int16_t</code> in C. You can
 use the directives <span
 id="dir-.byte"><em><code>.byte</code></em></span> and <span
-id="dir-.half"><em><code>.half</code></em></span> for those
+id="dir-.half"><em><code>.half</code></em></span> for those,
 respectively.</p>
 <pre><code>.byte value [ , value [ , ...  ] ]
 .half value [ , value [ , ...  ] ]</code></pre>
@@ -1232,7 +1233,7 @@ opposite of <code>lb</code> and <code>lh</code>, storing bytes and
 halfwords to memory. Instead of widening small values to register size,
 these take the lowest order bits from <code>rs1</code> and stores it to
 memory. (There’s no <code>sbu</code> and <code>shu</code> because stores
-are narrowing, not widening operations.)</p>
+are narrowing not widening operations.)</p>
 <pre><code>sb rs2, imm(rs1)
 sh rs2, imm(rs1)</code></pre>
 <p>While we’re at it, here’s two more minor details. Firstly, <span
@@ -1271,7 +1272,7 @@ test:
     .byte 1, 2, 3, 4, 5, 6, 7, 8
 </div>
 <p>Now you can try translating some basic C code into RISC-V assembly.
-Functions are… still out of the questions for now. Variables have to be
+Functions are… still out of the question for now. Variables have to be
 either global or put in registers. What else are we missing…</p>
 <h2 id="memory-mapped-io"><a href="#memory-mapped-io"
 class="anchor-link" aria-hidden="true"></a>Memory-mapped I/O</h2>
@@ -1302,7 +1303,7 @@ bits as a byte to the text in the output pane. In other words, a
     sw x10, 0(x11)
     ebreak
 </div>
-<p>Eh, close enough to a greeting the entire world. We could refactor it
+<p>Eh, close enough to greeting the entire world. We could refactor it
 a bit to use a loop, or whatever… Now that we think about it, how about
 going one step further and organize our code into some functions?</p>
 <h1 id="functions"><a href="#functions" class="anchor-link"
@@ -1343,7 +1344,7 @@ about <code>sp</code> later</li>
 and <span id="regalias-gp"><em><code>gp</code></em></span> is out of the
 scope of this document.)</li>
 </ul>
-<p>(Yeah it’s… all placed in a weird order… don’t mind…)</p>
+<p>(Yeah it’s… all placed in a weird order… don’t worry about it…)</p>
 <p>When you call a function, you put up to eight arguments in the… well,
 argument registers, in the order <code>a0</code>, <code>a1</code>, …,
 <code>a7</code>. After that you use <code>jal</code> or something, which
@@ -1439,7 +1440,7 @@ so <code>ra</code> would be overwritten, and then you can’t return back
 from the outer function anymore.</li>
 <li>We still don’t know how “saving” registers work.</li>
 </ul>
-<p>Clearly, both would require using the memory somehow. We can feed two
+<p>Clearly, both would require using memory somehow. We can feed two
 birds with one scone by using memory in a structured way: The <span
 id="term-stack"><em>stack</em></span>.</p>
 <p>Unlike some other architectures, the <code>sp</code> register is not
@@ -1611,7 +1612,7 @@ class="anchor-link" aria-hidden="true"></a>Position independence</h1>
 <code>auipc</code>?</p>
 <p>I don’t know about your experience, but the first time I saw RISC-V
 disassembly, this is the one instruction that caught my eye. And this
-memory has stuck to me ever since. It’s a rather common occurrence in
+memory has stuck with me ever since. It’s a rather common occurrence in
 real RISC-V programs, and somehow I’ve been hiding it from you this
 whole time. If you take a sneak peek at the next section’s title, you’ll
 see how far we’ve come without <code>auipc</code>.</p>
@@ -1729,7 +1730,7 @@ system.</p>
 <h2 id="privilege-levels"><a href="#privilege-levels"
 class="anchor-link" aria-hidden="true"></a>Privilege levels</h2>
 <p>One of the tasks an operating system performs is to control what
-programs. On RISC-V, the most basics of this control is implemented
+programs can run. On RISC-V, the most basic of this control is implemented
 using <span id="term-privilege-levels"><em>privilege levels</em></span>.
 RISC-V defines… let’s just say, several privilege levels, but we’re only
 going to use two here:</p>
@@ -1814,7 +1815,7 @@ read clear immediate”):
 </ul>
 <p>The full feature set of these instructions are designed for
 manipulating bit fields in CSRs, which we will not be doing that much of
-in this tutorial. Still, this orthogonal design should be fairly
+in this tutorial. Still, this design should be fairly
 intuitive to remember.</p>
 <p>CSRs and fields in CSRs do not behave like general purpose registers:
 Some of them are read/write, some are read-only. Also, invalid values
@@ -1839,8 +1840,8 @@ constant 0.)</li>
 <p>(No standard RISC-V CSR is write-only, or has side effects on
 read.)</p>
 <p>As a convenience, the pseudoinstructions <span
-id="insn-csrw"><em><code>csrw</code></em></span> (“CSR read”) and <span
-id="insn-csrr"><em><code>csrr</code></em></span> (“CSR write”) are
+id="insn-csrw"><em><code>csrr</code></em></span> (“CSR read”) and <span
+id="insn-csrr"><em><code>csrw</code></em></span> (“CSR write”) are
 available. <code>csrw csr, rs1</code> expands to
 <code>csrrw x0, csr, rs1</code>. Meanwhile, <code>csrr rd, csr</code>
 expands specifically to <code>csrrs rd, csr, x0</code>, just so we can
@@ -1856,9 +1857,9 @@ id="term-counters"><em>counters</em></span>. Two basic read-only
 counters are <span id="csr-cycle"><em><code>cycle</code></em></span> and
 <span id="csr-instret"><em><code>instret</code></em></span>. These
 counters, well, <em>count</em> the number of “cycles” and “instructions
-retired”. “Retried” is a technical term basically meaning “successfully
+retired”. “Retired” is a technical term basically meaning “successfully
 completed”.</p>
-<p>Since a 32-bit counter will overflow quite fast, on RV32, the
+<p>Since a 32-bit counter will overflow quite fast on RV32, the
 counters have “high” counterparts: <span
 id="csr-cycleh"><em><code>cycleh</code></em></span> and <span
 id="csr-instreth"><em><code>instreth</code></em></span>. So, for
@@ -1867,7 +1868,7 @@ the CSR <code>cycle</code> and higher 32 bits in the CSR
 <code>cycleh</code>.</p>
 <p>While the emulator is running, scroll down on the register view
 panel, and on the bottom you’ll see the values of these counters. For
-convenience, They’re shown combined, so,
+convenience, they’re shown combined, so,
 <code>cycle = 0x11223344_55667788</code> means <code>cycleh</code> is
 <code>0x11223344</code>, and <code>cycle</code> is
 <code>0x55667788</code>.</p>
@@ -1942,7 +1943,7 @@ trap cause”): The kind of exception.</li>
 exception pc”): The address of the instruction that caused the
 exception.</li>
 <li><span id="csr-mtval"><em><code>mtval</code></em></span> (“M-mode
-trap value”): Extra information about the exception</li>
+trap value”): Extra information about the exception.</li>
 <li><span id="csr-mstatus"><em><code>mstatus</code></em></span> (“M-mode
 status”): It is set to <code>0x00001800</code>. The two bits in the
 middle, <code>mstatus[12:11]</code> (In C syntax,
@@ -2116,7 +2117,7 @@ exception handling become completely inaccessible, not even readable. As
 with writing a read-only CSR, accessing an CSR without permission also
 causes an illegal instruction exception. Moreover, when an exception
 happens, we go back to Machine mode, so the exception handler runs in
-Machine mode. Here it does nothing except</p>
+Machine mode. Here it does nothing except stop the program.</p>
 <h2 id="intentionally-causing-an-exception"><a
 href="#intentionally-causing-an-exception" class="anchor-link"
 aria-hidden="true"></a>Intentionally causing an exception</h2>
@@ -2180,7 +2181,7 @@ others, have no special functionality. It can hold any 32-bit value.
 However, like all the other M-mode CSRs, it can only be accessed in
 Machine mode. User mode code cannot change the value of it.</p>
 <p>So for example, you can stash the operating system stack pointer in
-<code>mscratch</code> while executing in User mode. At the top of the
+<code>mscratch</code> before executing in User mode. At the top of the
 handler, <code>csrrw sp, mscratch, sp</code> to swap from the user stack
 pointer to the operating system stack pointer.</p>
 <pre><code>handler:
@@ -2218,15 +2219,15 @@ write</li>
 </ul>
 <p>We design the exception handling as follows:</p>
 <ul>
-<li>During most of the time in M-mode, <code>mscratch</code> is 0</li>
+<li>During most of the time in M-mode, <code>mscratch</code> is 0.</li>
 <li>While in U-mode, <code>mscratch</code> points to the operating
-system stack pointer</li>
+system stack pointer.</li>
 <li>At trap handler, if <code>mscratch</code> is 0, the exception came
-from M-mode, which we cannot handle, so report a fatal exception.</li>
+from M-mode, which we cannot handle, so we report a fatal exception.</li>
 <li>If it did come from U-mode, allocate 128 bytes on the stack to save
 the U-mode registers, and call <code>trap_main</code>, which manipulates
-U-mode registers in memory</li>
-<li>After <code>trap_main</code>, we restore from memory, deallocate it
+U-mode registers in memory.</li>
+<li>After <code>trap_main</code>, we restore from memory, deallocate
 from the stack, and go back to U-mode, as outlined in the previous
 section.</li>
 </ul>
@@ -2238,8 +2239,8 @@ section.</li>
   ...
   unsigned long t6; // x31
 };</code></pre>
-<p>Basically you can think of it as an array where element 0 is pc, and
-1 through 31 is registers x1 through x31.</p>
+<p>Basically you can think of it as an array where element 0 is <code>pc</code>, and
+1 through 31 are registers x1 through x31.</p>
 <p>Inside <code>trap_main</code>, we check <code>mcause</code> to see if
 it’s a system call. If it is, we dispatch based on <code>a7</code>. If
 it’s not, we report an exception from U-mode.</p>
