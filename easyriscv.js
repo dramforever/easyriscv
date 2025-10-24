@@ -301,7 +301,10 @@ function convertEmulator(el) {
         if (event.key === 'Tab' && ! event.ctrlKey && ! event.altKey && ! event.metaKey && ! event.shiftKey) {
             const text = edit.value;
 
-            const prev = text.lastIndexOf('\n', Math.max(0, edit.selectionStart - 1)) + 1;
+            const prev =
+                edit.selectionStart > 0
+                ? text.lastIndexOf('\n', edit.selectionStart - 1) + 1
+                : 0;
 
             if (edit.selectionStart === edit.selectionEnd) {
                 const caret = edit.selectionStart;
