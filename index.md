@@ -2040,7 +2040,7 @@ MPP &rarr; priv</code>. And, to be even more precise, `mstatus.MPP` is set to
 the lowest supported privilege mode since it's not supposed to contain
 unsupported modes.)
 
-The assembly syntax is simply:
+`mret` takes no operands, so the assembly syntax is simply:
 
 ```
 mret

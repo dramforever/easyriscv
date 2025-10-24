@@ -2065,7 +2065,8 @@ an exception occurs. To be precise, what happens is:</p>
 <code>0 → MPP → priv</code>. And, to be even more precise,
 <code>mstatus.MPP</code> is set to the lowest supported privilege mode
 since it’s not supposed to contain unsupported modes.)</p>
-<p>The assembly syntax is simply:</p>
+<p><code>mret</code> takes no operands, so the assembly syntax is
+simply:</p>
 <pre><code>mret</code></pre>
 <p>If we do <code>mret</code> after getting an exception, then we simply
 go back to retrying the same instruction again. This is useful for more
