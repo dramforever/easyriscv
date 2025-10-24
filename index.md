@@ -8,6 +8,13 @@ An interactive introduction to RISC-V assembly programming, by
 Interested in the code? Want to report an issue? Check out the GitHub page:
 <https://github.com/dramforever/easyriscv>
 
+# DRAFT VERSION NOTICE
+
+**This is a draft version. The content should be complete, but there may be
+significant editorial and usability issues. There may also be more mistakes than
+what you would expect from a finished tutorial. Please get in contact with the
+author in case of any confusion.**
+
 # Introduction
 
 Inspired by [Easy 6502 by Nick Morgan][easy6502], this is a quick-ish
