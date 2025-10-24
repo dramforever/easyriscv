@@ -26,6 +26,11 @@ pre {
     line-height: initial;
 }
 
+code {
+    /* Monospace font size workaround */
+    font-family: monospace, monospace;
+}
+
 .anchor-link {
     padding-right: 0.25em;
     text-decoration: none;
@@ -41,13 +46,13 @@ pre {
 
 .emulator-disabled {
     white-space: pre-wrap;
-    font-family: monospace;
+    font-family: monospace, monospace;
 }
 
 .emulator {
     line-height: initial;
     white-space: pre-wrap;
-    font-family: monospace;
+    font-family: monospace, monospace;
     display: grid;
     gap: 1em;
     grid-template-columns: 1fr auto;

@@ -355,6 +355,34 @@ function process_data(width) {
     };
 }
 
+function process_zfill() {
+    return {
+        parse(tokens, p) {
+            const value = parse_value(tokens, p);
+            if (value.type === 'error') {
+                return value;
+            }
+
+            if (! (p.i >= tokens.length || tokens[p.i] === '#')) {
+                return {
+                    type: 'error',
+                    message: `Expecting, got ${tokens[p.i]}`
+                };
+            } else {
+                return {
+                    type: 'data',
+                    length: value.value,
+                };
+            }
+        },
+        assemble(parsed, { evaluate, view, offset }) {
+            for (let i = 0; i < parsed.length; i ++)
+                view.setUint8(offset + i, 0);
+            return { type: 'ok' };
+        }
+    };
+}
+
 function process_instruction(types, assemble) {
     return {
         parse(tokens, p) {
@@ -619,6 +647,7 @@ const WORDS = (() => {
     words.set('.2byte', process_data(2));
     words.set('.word', process_data(4));
     words.set('.4byte', process_data(4));
+    words.set('.zero', process_zfill());
 
     words.set('addi',   process_instruction('rro', assemble_rri_itype(0x00000013)));
     words.set('slti',   process_instruction('rro', assemble_rri_itype(0x00002013)));
@@ -866,9 +895,9 @@ const WORDS = (() => {
             }
             const { value } = res;
             const rel = (value - pc) >>> 0;
-            const high = (rel >> 12 << 12) + ((rel & 0x800) !== 0);
+            const high = (rel >> 12) + ((rel & 0x800) !== 0);
 
-            const auipc = 0x00000017 | (rd << 7) | high;
+            const auipc = 0x00000017 | (rd << 7) | (high << 12);
             const addi = 0x00000013 | (rd << 7) | (rd << 15) | ((rel & 0xfff) << 20);
 
             view.setUint32(offset, auipc, /* littleEndian */ true);
@@ -899,10 +928,10 @@ const WORDS = (() => {
             }
             const { value } = res;
             const rel = (value - pc) >>> 0;
-            const high = (rel >> 12 << 12) + ((rel & 0x800) !== 0);
+            const high = (rel >>> 12) + ((rel & 0x800) !== 0);
 
             const ra = 1;
-            const auipc = 0x00000017 | (ra << 7) | high;
+            const auipc = 0x00000017 | (ra << 7) | (high << 12);
             const jalr = 0x00000067 | (ra << 7) | (ra << 15) | ((rel & 0xfff) << 20);
 
             view.setUint32(offset, auipc, /* littleEndian */ true);
@@ -1176,7 +1205,8 @@ export function assemble_riscv(text, origin) {
         return {
             type: 'ok',
             data: buf,
-            dump: `# Symbols\n${sym.join('\n')}\n\n${lines.join('\n')}\n`
+            dump: `# Symbols\n${sym.join('\n')}\n\n${lines.join('\n')}\n`,
+            symbols: new Map(label)
         };
     }
 }

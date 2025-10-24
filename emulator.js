@@ -117,6 +117,9 @@ export class RiscvState {
     }
 
     write_csr(num, value) {
+        if (this.priv < 3)
+            return null;
+
         if (num === 0x300) { // mstatus
             const mpp = (value >> 11) & 0b11;
             this.mpp = (mpp == 3) ? 3 : 0;
@@ -142,6 +145,15 @@ export class RiscvState {
     }
 
     read_csr(num) {
+        if (num == 0xc80) {
+            return this.cycle[1];
+        } else if (num == 0xc82) {
+            return this.instret[1];
+        }
+
+        if (this.priv < 3)
+            return null;
+
         if (num === 0x300) { // mstatus
             return (this.mpp << 11) >>> 0;
         } else if (num === 0x340) { // mscratch
@@ -158,10 +170,6 @@ export class RiscvState {
             return this.cycle[0];
         } else if (num == 0xc02) {
             return this.instret[0];
-        } else if (num == 0xc80) {
-            return this.cycle[1];
-        } else if (num == 0xc82) {
-            return this.instret[1];
         }
     }
 
@@ -407,5 +415,3 @@ export class RiscvState {
         }
     }
 }
-
-

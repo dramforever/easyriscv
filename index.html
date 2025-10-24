@@ -86,16 +86,50 @@
         id="toc-control-and-status-registers-csrs">Control and status
         registers (CSRs)</a></li>
         <li><a href="#counters" id="toc-counters">Counters</a></li>
-        <li><a href="#privileged-state"
-        id="toc-privileged-state">Privileged state</a></li>
+        <li><a href="#current-privilege-level"
+        id="toc-current-privilege-level">Current privilege
+        level</a></li>
         </ul></li>
-        <li><a href="#exceptions"
-        id="toc-exceptions">Exceptions</a></li>
+        <li><a href="#exceptions" id="toc-exceptions">Exceptions</a>
+        <ul>
+        <li><a href="#exception-entry"
+        id="toc-exception-entry">Exception entry</a></li>
+        <li><a href="#exception-causes"
+        id="toc-exception-causes">Exception causes</a></li>
+        <li><a href="#exception-return"
+        id="toc-exception-return">Exception return</a></li>
+        </ul></li>
+        <li><a href="#handling-user-mode"
+        id="toc-handling-user-mode">Handling User mode</a>
+        <ul>
+        <li><a href="#entering-user-mode"
+        id="toc-entering-user-mode">Entering User mode</a></li>
+        <li><a href="#intentionally-causing-an-exception"
+        id="toc-intentionally-causing-an-exception">Intentionally
+        causing an exception</a></li>
+        <li><a href="#saving-and-restoring-all-registers"
+        id="toc-saving-and-restoring-all-registers">Saving and restoring
+        all registers</a></li>
+        </ul></li>
+        <li><a href="#writing-a-very-very-bare-bones-operating-system"
+        id="toc-writing-a-very-very-bare-bones-operating-system">Writing
+        a very very bare bones operating system</a></li>
         <li><a href="#lies-and-omissions"
         id="toc-lies-and-omissions">Lies and omissions</a></li>
         <li><a href="#whats-next" id="toc-whats-next">What’s
         next?</a></li>
-        <li><a href="#index" id="toc-index">Index</a></li>
+        <li><a href="#index" id="toc-index">Index</a>
+        <ul>
+        <li><a href="#instructions"
+        id="toc-instructions">Instructions</a></li>
+        <li><a href="#registers-and-csrs"
+        id="toc-registers-and-csrs">Registers and CSRs</a></li>
+        <li><a href="#special-assembly-syntax"
+        id="toc-special-assembly-syntax">Special assembly
+        syntax</a></li>
+        <li><a href="#other-terms" id="toc-other-terms">Other
+        terms</a></li>
+        </ul></li>
         </ul>
     </nav>
 
@@ -107,8 +141,8 @@ class="uri">https://github.com/dramforever/easyriscv</a></p>
 <h1 id="introduction"><a href="#introduction" class="anchor-link"
 aria-hidden="true"></a>Introduction</h1>
 <p>Inspired by <a href="https://skilldrick.github.io/easy6502/">Easy
-6502 by Nick Morgan</a>, this is a quick-ish introduction to RISC-V
-assembly programming. This introduction is intended for those with a
+6502 by Nick Morgan</a>, this is a quick-ish introductory tutorial to
+RISC-V assembly programming. This tutorial is intended for those with a
 basic familiarity with low level computer science concepts, but
 unfamiliar with RISC-V. If you’re curious about RISC-V, I hope this will
 be a good start to your journey to learning about it.</p>
@@ -1720,24 +1754,112 @@ aria-hidden="true"></a>Control and status registers (CSRs)</h2>
 status registers</em></span> (<span id="term-csrs"><em>CSRs</em></span>)
 deal with various features that are in some sense “special”. No I don’t
 have a better explanation of what “special” means.</p>
+<p>Six instructions are available for manipulating CSRs.</p>
+<pre><code>csrrw rd, csr, rs1
+csrrs rd, csr, rs1
+csrrc rd, csr, rs1
+csrrwi rd, csr, uimm5
+csrrsi rd, csr, uimm5
+csrrci rd, csr, uimm5</code></pre>
+<p>To refer to a CSR in these instructions, use its name in assembly
+code. We’ll get to those in a bit.</p>
+<p>The pattern works like this. Each of the instructions
+<em>atomically</em> reads the old value of the CSR, and writes the new
+value based on some operation performed on the old value and the last
+operand. The possible operations are:</p>
+<ul>
+<li><span id="insn-csrrw"><em><code>csrrw</code></em></span> (“CSR read
+write”): <code>{ csr = rs1; rd = csr_old; }</code></li>
+<li><span id="insn-csrrs"><em><code>csrrs</code></em></span> (“CSR read
+set”): <code>{ csr = csr | rs1; rd = csr_old; }</code></li>
+<li><span id="insn-csrrc"><em><code>csrrc</code></em></span> (“CSR read
+clear”): <code>{ csr = csr &amp; ~rs1; rd = csr_old; }</code></li>
+</ul>
+<p>Where <code>&amp;</code>, <code>|</code>, <code>~</code> are bitwise
+“and”, “or”, “not” respectively.</p>
+<p>Specifically, note that <code>rd</code> and <code>rs1</code> can be
+the same. For example, this instruction swaps the value in
+<code>a0</code> and <code>mscratch</code>:</p>
+<pre><code>csrrw a0, mscratch, a0</code></pre>
+<p>For the “immediate” variants, instead of a register, they take an
+“unsigned”/zero-extended 5-bit immediate value, i.e. an immediate value
+0 through 31, inclusive. This is represented using <code>uimm5</code> in
+the assembly syntax description. The operation is the same
+otherwise.</p>
+<ul>
+<li><span id="insn-csrrwi"><em><code>csrrwi</code></em></span> (“CSR
+read write immediate”): <code>{ csr = uimm5; rd = csr_old; }</code></li>
+<li><span id="insn-csrrsi"><em><code>csrrsi</code></em></span> (“CSR
+read set immediate”):
+<code>{ csr = csr | uimm5; rd = csr_old; }</code></li>
+<li><span id="insn-csrrci"><em><code>csrrci</code></em></span> (“CSR
+read clear immediate”):
+<code>{ csr = csr &amp; ~uimm5; rd = csr_old; }</code></li>
+</ul>
+<p>The full feature set of these instructions are designed for
+manipulating bit fields in CSRs, which we will not be doing that much of
+in this tutorial. Still, this orthogonal design should be fairly
+intuitive to remember.</p>
+<p>CSRs and fields in CSRs do not behave like general purpose registers:
+Some of them are read/write, some are read-only. Also, invalid values
+have special behaviors. We will touch on more details as we introduce
+the individual CSRs themselves, but one thing you may have noticed is
+that we don’t seem to have read-only CSR instructions. Read-only access
+is achieved using special cases in the instruction encodings:</p>
+<ul>
+<li><code>csrrs</code> and <code>csrrc</code> do not write to the CSR if
+<code>rs1</code> is <code>x0</code> (a.k.a. <code>zero</code>) (Note
+that just the value of <code>rs1</code> being 0 is not enough.)</li>
+<li><code>csrrsi</code> and <code>csrrci</code> do not write to the CSR
+if <code>uimm5</code> is 0.</li>
+</ul>
+<p>While we’re at it:</p>
+<ul>
+<li><code>csrrw</code> and <code>csrrwi</code> do not read the CSR if
+<code>rd</code> is <code>x0</code> (a.k.a. <code>zero</code>). (Note
+that writing to <code>x0</code> has no effect anyway, since it’s
+constant 0.)</li>
+</ul>
+<p>(No standard RISC-V CSR is write-only, or has side effects on
+read.)</p>
+<p>As a convenience, the pseudoinstructions <span
+id="insn-csrw"><em><code>csrw</code></em></span> (“CSR read”) and <span
+id="insn-csrr"><em><code>csrr</code></em></span> (“CSR write”) are
+available. <code>csrw csr, rs1</code> expands to
+<code>csrrw x0, csr, rs1</code>. Meanwhile, <code>csrr rd, csr</code>
+expands specifically to <code>csrrs rd, csr, x0</code>, just so we can
+agree on an encoding.</p>
+<pre><code>csrw csr, rs1
+csrr rd, csr</code></pre>
+<p>You may have seen these CSR things if you’ve scrolled down on the
+register view. Yes, we’re finally getting into those.</p>
 <h2 id="counters"><a href="#counters" class="anchor-link"
 aria-hidden="true"></a>Counters</h2>
-<p>Two basic read-only counters are <span
-id="csr-cycle"><em><code>cycle</code></em></span> and <span
-id="csr-instret"><em><code>instret</code></em></span>. These counters,
-well, <em>count</em> the number of “cycles” and “instructions retired”.
-“Retried” is a technical term basically meaning “successfully
+<p>An example of CSRs is <span
+id="term-counters"><em>counters</em></span>. Two basic read-only
+counters are <span id="csr-cycle"><em><code>cycle</code></em></span> and
+<span id="csr-instret"><em><code>instret</code></em></span>. These
+counters, well, <em>count</em> the number of “cycles” and “instructions
+retired”. “Retried” is a technical term basically meaning “successfully
 completed”.</p>
 <p>Since a 32-bit counter will overflow quite fast, on RV32, the
 counters have “high” counterparts: <span
 id="csr-cycleh"><em><code>cycleh</code></em></span> and <span
 id="csr-instreth"><em><code>instreth</code></em></span>. So, for
 example, the full cycle counter has 64 bits, with the lower 32 bits in
-<code>cycle</code> and higher 32 bits in <code>cycleh</code>.</p>
+the CSR <code>cycle</code> and higher 32 bits in the CSR
+<code>cycleh</code>.</p>
+<p>While the emulator is running, scroll down on the register view
+panel, and on the bottom you’ll see the values of these counters. For
+convenience, They’re shown combined, so,
+<code>cycle = 0x11223344_55667788</code> means <code>cycleh</code> is
+<code>0x11223344</code>, and <code>cycle</code> is
+<code>0x55667788</code>.</p>
 <p>On real hardware <code>cycle</code> is coupled to the clock cycle. In
 this emulator, every time you press “Step”, it counts as a cycle. When
 you press “Run” and it starts, well, running, a certain number of cycles
-happen periodically. Let’s look at a really simple example:</p>
+happen periodically.</p>
+<p>Let’s look at a really simple example:</p>
 <div class="emulator-disabled">
     addi a0, a0, 1
     addi a0, a0, 1
@@ -1748,16 +1870,890 @@ happen periodically. Let’s look at a really simple example:</p>
 ends up at only 3 because the final <code>ebreak</code> instruction
 never actually completes.</p>
 <p>(Do not confuse “retired” with “retried”.)</p>
-<h2 id="privileged-state"><a href="#privileged-state"
-class="anchor-link" aria-hidden="true"></a>Privileged state</h2>
+<p>A program can read its own counters. For example, this fun little
+program loops until the cycle count is over 1000, assuming the low 32
+bits doesn’t overflow before it has time to react:</p>
+<div class="emulator-disabled">
+    li t1, 1000
+loop:
+    csrr t0, cycle
+    blt t0, t1, loop
+
+    ebreak
+</div>
+<h2 id="current-privilege-level"><a href="#current-privilege-level"
+class="anchor-link" aria-hidden="true"></a>Current privilege level</h2>
+<p>Technically <code>cycle</code> and <code>instret</code> are not part
+of the privileged architecture. The real fun begins <em>now</em>.</p>
+<p>The emulator shows the current privilege level as
+<code>(priv)</code>. It is in parentheses to remind you of a very
+important fact:</p>
+<p><em>There is no CSR for the current privilege level.</em></p>
+<p>In general, it is not possible for a RISC-V program to learn what
+privilege level it’s in. This is required for the <a
+href="https://en.wikipedia.org/wiki/Popek_and_Goldberg_virtualization_requirements">Popek
+and Goldberg conditions of virtualization</a> to work, specifically
+because being able to read the current privilege level at a
+lower-than-maximum privilege level would be a “sensitive” but
+“unprivileged” instruction.</p>
+<p>If you’re writing a program for a certain privilege level, you should
+simply assume that it is correctly being run at that privilege
+level.</p>
 <h1 id="exceptions"><a href="#exceptions" class="anchor-link"
 aria-hidden="true"></a>Exceptions</h1>
+<h2 id="exception-entry"><a href="#exception-entry" class="anchor-link"
+aria-hidden="true"></a>Exception entry</h2>
+<p>A fundamental way an operating system does its job is through
+handling exceptions. In general, <span
+id="term-exceptions"><em>exceptions</em></span> occur when there’s a
+problem with a specific instruction, and execution cannot continue. For
+example, since <code>cycle</code> is a read-only CSR, writing to it is
+an illegal instruction:</p>
+<div class="emulator-disabled">
+    csrw cycle, x0
+</div>
+<p>Since we have no exception handling in the program, we’ll have to
+inspect what happened manually in the emulator. Indeed, a lot has
+happened:</p>
+<p>Firstly, this message tells you that an exception happened:</p>
+<pre><code>[ Exception: Illegal instruction (2) | tval = 0xc0001073, epc = 0x4000000c ]</code></pre>
+<p>The same information is now also available in the CSRs, as
+follows:</p>
+<ul>
+<li><span id="csr-mcause"><em><code>mcause</code></em></span> (“M-mode
+trap cause”): The kind of exception.</li>
+<li><span id="csr-mepc"><em><code>mepc</code></em></span> (“M-mode
+exception pc”): The address of the instruction that caused the
+exception.</li>
+<li><span id="csr-mtval"><em><code>mtval</code></em></span> (“M-mode
+trap value”): Extra information about the exception</li>
+<li><span id="csr-mstatus"><em><code>mstatus</code></em></span> (“M-mode
+status”): It is set to <code>0x00001800</code>. The two bits in the
+middle, <code>mstatus[12:11]</code> (In C syntax,
+<code>(mstatus &gt;&gt; 11) &amp; 0x3</code>) is the
+<code>mstatus.MPP</code> (“M-mode previous privilege level”) field,
+which contains 3, meaning that the exception occurred while running in
+Machine mode.</li>
+</ul>
+<p>When an exception happens, in addition to recording the exception
+information in these CSR fields, <code>pc</code> is set to
+<code>mtvec</code>, which is supposed to be the handler address. Let’s
+write ourselves an exception handler that simply prints a message and
+stops the emulator, and see the handling in action:</p>
+<div class="emulator-disabled">
+    la t0, handler
+    csrw mtvec, t0
+
+    # Now cause an exception
+    csrw cycle, x0
+
+    # Rest of the main program is never executed
+    addi a0, a0, 1
+    addi a0, a0, 1
+
+handler:
+    la a0, msg
+    call puts
+    ebreak
+
+msg:
+    .byte 0x4f, 0x68, 0x20, 0x6e, 0x6f, 0x21, 0x0a, 0x00
+
+    # void puts(const char *);
+puts:
+    lui t1, %hi(0x10000000)
+1:
+    lb t0, 0(a0)
+    beq t0, zero, 2f
+    sw t0, 0(t1)
+    addi a0, a0, 1
+    j 1b
+
+2:
+    ret
+</div>
+<p>Yeah it just prints <code>Oh no!</code> on error. Baby steps…</p>
+<p>The checkboxes “Pause on exc.” and “Print on exc.” control whether
+the emulator should pause or print a message, respectively, when an
+exception occurs. You can uncheck those if you want the exception
+handler set in the program to run without interference.</p>
+<p>(Another case that will cause a jump to <code>mtvec</code> is <span
+id="term-interrupts"><em>interrupts</em></span>. However, this feature
+does not exist in the emulator. The two cases are collectively called
+<span id="term-traps"><em>traps</em></span>.)</p>
+<h2 id="exception-causes"><a href="#exception-causes"
+class="anchor-link" aria-hidden="true"></a>Exception causes</h2>
+<p>These are the exceptions possible in this emulator, and their
+respective numeric codes:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;"></th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">0</td>
+<td style="text-align: left;">Instruction address misaligned</td>
+</tr>
+<tr>
+<td style="text-align: left;">1</td>
+<td style="text-align: left;">Instruction access fault</td>
+</tr>
+<tr>
+<td style="text-align: left;">2</td>
+<td style="text-align: left;">Illegal instruction</td>
+</tr>
+<tr>
+<td style="text-align: left;">3</td>
+<td style="text-align: left;">Breakpoint</td>
+</tr>
+<tr>
+<td style="text-align: left;">5</td>
+<td style="text-align: left;">Load access fault</td>
+</tr>
+<tr>
+<td style="text-align: left;">7</td>
+<td style="text-align: left;">Store/AMO access fault</td>
+</tr>
+<tr>
+<td style="text-align: left;">8</td>
+<td style="text-align: left;">Environment call from User mode</td>
+</tr>
+<tr>
+<td style="text-align: left;">11</td>
+<td style="text-align: left;">Environment call from Machine mode</td>
+</tr>
+</tbody>
+</table>
+<p>“Instruction address misaligned” happens when attempting to jump to
+an instruction that is not 4-byte aligned. The exception happens on the
+jump or branch instruction, not the target.</p>
+<p>“Load access fault” and “Store/AMO access fault” happens when
+accessing a invalid memory address, or accessing a memory address in an
+invalid way.</p>
+<p>(“AMO” stands for “atomic memory operation”, which we will not talk
+about and is not featured in the emulator.)</p>
+<p>“Illegal instruction” happens not only in the self explanatory way
+when an invalid instruction is executed, but also when accessing a CSR
+in an invalid way, or from too low a privilege level.</p>
+<p>“Breakpoint”, “Environment call from User mode” and “Environment call
+from Machine mode” will be explained in a future section.</p>
+<h2 id="exception-return"><a href="#exception-return"
+class="anchor-link" aria-hidden="true"></a>Exception return</h2>
+<p>The <span id="insn-mret"><em><code>mret</code></em></span> (“M-mode
+return”) instruction performs the reverse of part of what happens when
+an exception occurs. To be precise, what happens is:</p>
+<ul>
+<li>The current privilege levels is set back to
+<code>mstatus.MPP</code></li>
+<li><code>mstatus.MPP</code> is set to 0</li>
+<li><code>pc</code> is set to <code>mepc</code></li>
+</ul>
+<p>(You can think of the privilege mode bits as shifting in a chain
+<code>0 → MPP → priv</code>. And, to be even more precise,
+<code>mstatus.MPP</code> is set to the lowest supported privilege mode
+since it’s not supposed to contain unsupported modes.)</p>
+<p>The assembly syntax is simply:</p>
+<pre><code>mret</code></pre>
+<p>If we do <code>mret</code> after getting an exception, then we simply
+go back to retrying the same instruction again. This is useful for more
+featureful implementations, where for example, after handling a page
+fault the correct course of action is to retry the faulting
+instruction.</p>
+<p>However, <code>mstatus</code> and <code>mepc</code> are also
+writable. This gives us more flexibility in the use of
+<code>mret</code>.</p>
+<h1 id="handling-user-mode"><a href="#handling-user-mode"
+class="anchor-link" aria-hidden="true"></a>Handling User mode</h1>
+<h2 id="entering-user-mode"><a href="#entering-user-mode"
+class="anchor-link" aria-hidden="true"></a>Entering User mode</h2>
+<p>Even though <code>mret</code> is named “return”, it is in fact the
+only way to lower the privilege level. We can use the behavior of
+<code>mret</code> to enter User mode. Here’s an example of a User mode
+program that does something bad:</p>
+<div class="emulator-disabled">
+    la t0, handler
+    csrw mtvec, t0
+
+    lui t0, %hi(0x1800)
+    addi t0, t0, %lo(0x1800)
+
+    # Clear MPP to 0
+    csrrc zero, mstatus, t0
+
+    la t0, user_entry
+    csrw mepc, t0
+    mret
+
+handler:
+    ebreak # Just stop the emulator
+
+user_entry:
+    # Try to access an M-mode CSR
+    csrr a0, mstatus
+</div>
+<p>As you can see, after we enter User mode, all of the CSRs used for
+exception handling become completely inaccessible, not even readable. As
+with writing a read-only CSR, accessing an CSR without permission also
+causes an illegal instruction exception. Moreover, when an exception
+happens, we go back to Machine mode, so the exception handler runs in
+Machine mode. Here it does nothing except</p>
+<h2 id="intentionally-causing-an-exception"><a
+href="#intentionally-causing-an-exception" class="anchor-link"
+aria-hidden="true"></a>Intentionally causing an exception</h2>
+<p>Sometimes, a program may wish to intentionally cause an exception.
+There are several well-defined way to do that:</p>
+<ul>
+<li>The instruction <code>csrrw zero, cycle, zero</code> is specifically
+an illegal instruction. It causes an “Illegal instruction”
+exception.</li>
+<li>The instruction <span
+id="insn-ebreak"><em><code>ebreak</code></em></span> causes a
+“Breakpoint” exception</li>
+<li>The instruction <span
+id="insn-ecall"><em><code>ecall</code></em></span> causes an
+“Environment call from User mode” exception when executed in User mode,
+and “Environment call from Machine mode” exception when executed in
+Machine mode.</li>
+</ul>
+<p>Give those exceptions a try here:</p>
+<div class="emulator-disabled">
+    la t0, handler
+    csrw mtvec, t0
+
+    lui t0, %hi(0x1800)
+    addi t0, t0, %lo(0x1800)
+
+    # Clear MPP to 0
+    csrrc zero, mstatus, t0
+
+    la t0, user_entry
+    csrw mepc, t0
+    mret
+
+handler:
+    ebreak # Just stop the emulator
+
+user_entry:
+    ebreak
+    # ecall
+    # csrrw zero, cycle, zero
+</div>
+<p>As the names suggest, <code>ebreak</code> is used for debugging
+breakpoints. As a special case, in this emulator <code>ebreak</code> in
+Machine mode stops the emulator. You can think of it as the emulator
+being a debugger, and the debugger catching the breakpoint.</p>
+<p>Meanwhile, <code>ecall</code> is used for things like system calls.
+“Environment call from User mode” is a distinct exception cause code to
+make it easy to check specifically for this case.</p>
+<h2 id="saving-and-restoring-all-registers"><a
+href="#saving-and-restoring-all-registers" class="anchor-link"
+aria-hidden="true"></a>Saving and restoring all registers</h2>
+<p>One thing that you would want in your trap handler is to not trust or
+disturb <em>any</em> general purpose registers in the code that you’ve
+trapped from, unless you intentionally want to do so, for example to
+return a value from a system call. So you’d want to save all the
+registers to memory, before doing anything else. However, accessing
+memory requires a general purpose register.</p>
+<p>The <span id="csr-mscratch"><em><code>mscratch</code></em></span>
+(“M-mode scratch”) CSR can help with this. This register, unlike all the
+others, have no special functionality. It can hold any 32-bit value.
+However, like all the other M-mode CSRs, it can only be accessed in
+Machine mode. User mode code cannot change the value of it.</p>
+<p>So for example, you can stash the operating system stack pointer in
+<code>mscratch</code> while executing in User mode. At the top of the
+handler, <code>csrrw sp, mscratch, sp</code> to swap from the user stack
+pointer to the operating system stack pointer.</p>
+<pre><code>handler:
+    csrrw sp, mscratch, sp
+    # Save registers except sp
+    csrr t0, mscratch
+    # t0 = user sp, save it
+    # Save user pc
+    ...</code></pre>
+<p>And, to restore:</p>
+<pre><code>    lw t0, ... # Load user pc
+    csrw mepc, t0
+    lw t0, ... # Load user sp
+    csrw mscratch, t0
+    # Restore registers except sp
+    csrrw sp, mscratch, sp
+    mret</code></pre>
+<p>We’ll see the full code for this in the following section.</p>
+<h1 id="writing-a-very-very-bare-bones-operating-system"><a
+href="#writing-a-very-very-bare-bones-operating-system"
+class="anchor-link" aria-hidden="true"></a>Writing a very very bare
+bones operating system</h1>
+<p>We have enough of to write a very very bare bones operating system.
+It will support these features:</p>
+<ul>
+<li>System calls:
+<ul>
+<li><code>a7 = 1</code>: putchar, <code>a0</code> is the byte to
+write</li>
+<li><code>a7 = 2</code>: exit</li>
+</ul></li>
+<li>Exception handling: Print error message and exit</li>
+</ul>
+<p>We design the exception handling as follows:</p>
+<ul>
+<li>During most of the time in M-mode, <code>mscratch</code> is 0</li>
+<li>While in U-mode, <code>mscratch</code> points to the operating
+system stack pointer</li>
+<li>At trap handler, if <code>mscratch</code> is 0, the exception came
+from M-mode, which we cannot handle, so report a fatal exception.</li>
+<li>If it did come from U-mode, allocate 128 bytes on the stack to save
+the U-mode registers, and call <code>trap_main</code>, which manipulates
+U-mode registers in memory</li>
+<li>After <code>trap_main</code>, we restore from memory, deallocate it
+from the stack, and go back to U-mode, as outlined in the previous
+section.</li>
+</ul>
+<p>The structure to save registers in is fairly simple:</p>
+<pre><code>struct regs {
+  unsigned long pc;
+  unsigned long ra; // x1
+  unsigned long sp; // x2
+  ...
+  unsigned long t6; // x31
+};</code></pre>
+<p>Basically you can think of it as an array where element 0 is pc, and
+1 through 31 is registers x1 through x31.</p>
+<p>Inside <code>trap_main</code>, we check <code>mcause</code> to see if
+it’s a system call. If it is, we dispatch based on <code>a7</code>. If
+it’s not, we report an exception from U-mode.</p>
+<p>At the beginning, we simply initialize the <code>struct regs</code>
+structure on stack, initialize user <code>sp</code> and <code>pc</code>
+in it, and jump to the same code that handles returning to U-mode.</p>
+<p>Here’s the assembly code with User mode code at the bottom. You may
+want to uncheck “Pause on exc.” and “Print on exc.” for convenience.</p>
+<p>Do not be too hard on yourself if you have trouble understanding the
+code fully. This is, after all, a fairly complete OS kernel entry and
+exit implementation. Really, the most important part I’m showing you
+here is that it is possible.</p>
+<div class="emulator-disabled">
+    # Reserve 256 bytes for OS stack
+    # User stack starts 256 bytes lower
+    addi t2, sp, -256
+
+    la t0, handler
+    csrw mtvec, t0
+
+    # Prepare struct reg
+    addi sp, sp, -128
+
+    mv a0, sp # struct regs *
+
+    # Set user pc to user_entry
+    la t0, user_entry
+    sw t0, 0(a0)
+
+    # Set user sp
+    sw t2, 8(a0)
+
+    j enter_user
+
+    # void trap_main(struct regs *regs)
+trap_main:
+    # Save regs based on calling convention
+    addi sp, sp, -16
+    sw s0, (sp)
+    sw ra, 4(sp)
+
+    mv s0, a0
+    csrr a1, mcause
+    li t1, 8 # &quot;Environment call from User mode&quot;
+    bne a1, t1, do_bad_exception # Not ecall, that's bad
+
+    # Call do_syscall with args from ecall
+
+    lw a0, 40(s0)
+    lw a1, 44(s0)
+    lw a2, 48(s0)
+    lw a3, 52(s0)
+    lw a4, 56(s0)
+    lw a5, 60(s0)
+    lw a6, 64(s0)
+    lw a7, 68(s0)
+    call do_syscall
+
+    sw a0, 40(s0)   # Set user a0 return value
+
+    # Bump user pc by 4
+    # Skip over ecall instruction
+    lw t0, 0(s0)
+    addi t0, t0, 4
+    sw t0, 0(s0)
+
+    # Restore regs based on calling convention
+    lw s0, (sp)
+    lw ra, 4(sp)
+    addi sp, sp, 16
+    ret
+
+    # a0 = arg0, a7 = syscall number
+do_syscall:
+    # Dispatch based on syscall number
+    li t0, 1
+    beq a7, t0, sys_putchar
+    li t0, 2
+    beq a7, t0, sys_exit
+
+    # Bad syscall
+    li a0, -1
+    ret
+
+    # int sys_putchar(char c)
+sys_putchar:
+    # Save regs based on calling convention
+    addi sp, sp, -16
+    sw s0, (sp)
+    sw ra, 4(sp)
+
+    call kputchar
+    li a0, 0
+
+    # Restore regs based on calling convention
+    lw s0, (sp)
+    lw ra, 4(sp)
+    addi sp, sp, 16
+    ret
+
+    # [[noreturn]] void sys_exit()
+sys_exit:
+    # Just stop the emulator
+    ebreak
+
+    # [[noreturn]] void do_bad_exception(struct regs *regs, long cause)
+    # Print message about bad U-mode exception, then stop
+do_bad_exception:
+    mv s0, a1
+
+    # Equivalent of printf(&quot;Exception 0x%x&quot;, cause);
+    la a0, msg_exception
+    call kputs
+
+    mv a0, s0
+    la t0, hex_chars
+    add t0, t0, a0
+    lbu a0, (t0)
+    call kputchar
+
+    li a0, 0xa # '\n'
+    call kputchar
+
+    # Stop the emulator
+    ebreak
+
+fatal:
+    # Print message about fatal exception, then stop
+    la a0, msg_fatal
+    call kputs
+    ebreak
+
+msg_exception:
+    # &quot;Exception 0x&quot;
+    .byte 0x45, 0x78, 0x63, 0x65, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x20, 0x30, 0x78, 0x00
+
+msg_fatal:
+    # &quot;Fatal exception\n&quot;
+    .byte 0x46, 0x61, 0x74, 0x61, 0x6c, 0x20, 0x65, 0x78, 0x63, 0x65, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x0a, 0x00
+
+hex_chars:
+    # &quot;0123456789abcdef&quot;
+    .byte 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x00
+
+    .byte 0x00 # Alignment padding
+    # Otherwise, the next instruction wouldn't be aligned
+
+    # void kputs(const char *);
+    # Print string by accessing MMIO directly
+kputs:
+    lui t1, %hi(0x10000000)
+1:
+    lb t0, 0(a0)
+    beq t0, zero, 2f
+    sw t0, 0(t1)
+    addi a0, a0, 1
+    j 1b
+2:
+    ret
+
+    # void kputchar(char);
+    # Print byte by accessing MMIO directly
+kputchar:
+    lui t1, %hi(0x10000000)
+    sw a0, (t1)
+    ret
+
+    # The big exception handler
+handler:
+    csrrw sp, mscratch, sp
+
+    # If mscratch was 0, this is exception from M-mode
+    # Can't handle that, it's a fatal error
+    beq sp, zero, fatal
+
+    # Save all registers
+    addi sp, sp, -128
+    sw x1, 4(sp)
+    # x2/sp handled separately
+    sw x3, 12(sp)
+    sw x4, 16(sp)
+    sw x5, 20(sp)
+    sw x6, 24(sp)
+    sw x7, 28(sp)
+    sw x8, 32(sp)
+    sw x9, 36(sp)
+    sw x10, 40(sp)
+    sw x11, 44(sp)
+    sw x12, 48(sp)
+    sw x13, 52(sp)
+    sw x14, 56(sp)
+    sw x15, 60(sp)
+    sw x16, 64(sp)
+    sw x17, 68(sp)
+    sw x18, 72(sp)
+    sw x19, 76(sp)
+    sw x20, 80(sp)
+    sw x21, 84(sp)
+    sw x22, 88(sp)
+    sw x23, 92(sp)
+    sw x24, 96(sp)
+    sw x25, 100(sp)
+    sw x26, 104(sp)
+    sw x27, 108(sp)
+    sw x28, 112(sp)
+    sw x29, 116(sp)
+    sw x30, 120(sp)
+    sw x31, 124(sp)
+
+    # Save user sp, also set mscratch to 0 in M-mode
+    csrrw t0, mscratch, zero
+    sw t0, 8(sp)
+
+    # Save user pc
+    csrr t0, mepc
+    sw t0, 0(sp)
+
+    mv a0, sp
+    call trap_main
+    # ... falls through after trap_main ...
+enter_user:
+    # Set mstatus.MPP = User
+    lui t0, %hi(0x1800)
+    addi t0, t0, %lo(0x1800)
+    csrrc zero, mstatus, t0
+
+    # Set mepc = user pc
+    # Will actually jump with mret
+    lw t0, 0(sp)
+    csrw mepc, t0
+
+    # Set mscratch = user sp temporarily
+    # Will swap right before mret
+    lw t0, 8(sp)
+    csrw mscratch, t0
+
+    # Restore other registers from stack
+    lw x1, 4(sp)
+    # x2/sp handled separately
+    lw x3, 12(sp)
+    lw x4, 16(sp)
+    lw x5, 20(sp)
+    lw x6, 24(sp)
+    lw x7, 28(sp)
+    lw x8, 32(sp)
+    lw x9, 36(sp)
+    lw x10, 40(sp)
+    lw x11, 44(sp)
+    lw x12, 48(sp)
+    lw x13, 52(sp)
+    lw x14, 56(sp)
+    lw x15, 60(sp)
+    lw x16, 64(sp)
+    lw x17, 68(sp)
+    lw x18, 72(sp)
+    lw x19, 76(sp)
+    lw x20, 80(sp)
+    lw x21, 84(sp)
+    lw x22, 88(sp)
+    lw x23, 92(sp)
+    lw x24, 96(sp)
+    lw x25, 100(sp)
+    lw x26, 104(sp)
+    lw x27, 108(sp)
+    lw x28, 112(sp)
+    lw x29, 116(sp)
+    lw x30, 120(sp)
+    lw x31, 124(sp)
+    addi sp, sp, 128
+
+    # Actually restore sp
+    csrrw sp, mscratch, sp
+    mret    # Time to go to user mode!
+
+################
+
+user_entry:
+    la a0, msg_hello
+    call puts
+    call exit
+
+    # void puts(const char *);
+    # Print string using system call
+puts:
+    addi sp, sp, -16
+    sw s0, (sp)
+    sw ra, 4(sp)
+
+    mv s0, a0
+1:
+    lb a0, 0(s0)
+    beq a0, zero, 2f
+    call putchar
+    addi s0, s0, 1
+    j 1b
+2:
+
+    lw s0, (sp)
+    lw ra, 4(sp)
+    addi sp, sp, 16
+    ret
+
+    # void putchar(const char *);
+    # Print byte using system call
+putchar:
+    li a7, 1
+    ecall
+    ret
+
+    # [[noreturn]] void exit();
+exit:
+    li a7, 2
+    ecall
+    # Not supposed to return, just to be safe
+    ebreak
+
+msg_hello:
+    .byte 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21, 0x0a, 0x00
+</div>
+<p>For reference, here’s some of the OS code in pseudo-C.</p>
+<pre><code>void trap_main(struct regs *regs) {
+    unsigned long cause = csr_read(mcause);
+    if (cause != 8)
+        do_bad_exception(regs, cause);
+
+    # Call do_syscall with args from ecall
+    unsigned long ret = do_syscall(regs-&gt;a0, ..., regs-&gt;a7);
+    regs-&gt;a0 = ret;
+
+    // Bump user pc by 4, skip over ecall instruction
+    regs-&gt;pc += 4;
+}
+
+unsigned long do_syscall(
+    unsigned long a0,
+    ...,
+    unsigned long a7
+) {
+    if (a7 == 1)
+        sys_putchar(a0);
+    else if (a7 == 8)
+        sys_exit();
+    else
+        return -1;
+}
+
+unsigned long sys_putchar(char a) {
+    kputchar(a);
+    return 0;
+}
+
+[[noreturn]]
+unsigned long sys_exit(char a) {
+    ebreak();
+}
+
+[[noreturn]]
+void do_bad_exception(struct regs *regs, unsigned long cause) {
+    kputs(&quot;Exception 0x&quot;);
+    kputchar(hex_chars[cause]);
+    kputchar(&#39;\n&#39;);
+    ebreak();
+}
+
+[[noreturn]]
+void fatal() {
+    kputs(&quot;Fatal exception\n&quot;);
+    ebreak();
+}
+
+void kputs(const char *str) {
+    while (*str) {
+        u32 val = (u32)*str;
+        writel(0x10000000, val); // MMIO write
+        str ++;
+    }
+}
+
+void kputchar(char c) {
+    u32 val = (u32)c;
+    writel(0x10000000, val); // MMIO write
+}</code></pre>
+<p>And here’s the user code, again in pseudo C:</p>
+<pre><code>[[noreturn]]
+void user_entry() {
+    puts(...);
+    exit();
+}
+
+void puts(const char *str) {
+    while (*str) {
+        putchar(*str);
+        str ++;
+    }
+}
+
+void putchar(char c) {
+    ecall(a0 = c, a7 = 1);
+}
+
+void exit() {
+    ecall(a7 = 2);
+}</code></pre>
 <h1 id="lies-and-omissions"><a href="#lies-and-omissions"
 class="anchor-link" aria-hidden="true"></a>Lies and omissions</h1>
+<p>As long as this tutorial is, some simplifications have been made.
+Here are some of the most egregious lies and omissions, compared to the
+“real” RISC-V architecture and “real” RISC-V assembly code found in the
+world:</p>
+<ul>
+<li>The assembly syntax resembles the syntax used by LLVM assembler and
+GNU Binutils for RISC-V. However, it is not identical.</li>
+<li>There are a lot more pseudoinstructions and CSRs than what I have
+described.</li>
+<li>The <code>li</code> pseudoinstruction should support a wider range
+of constants.</li>
+<li><code>mstatus</code> is a lot more complicated than what I have
+described.</li>
+<li><code>%hi</code>, <code>%lo</code>, <code>%pcrel_hi</code>,
+<code>%pcrel_lo</code> are more complicated than what I have
+described.</li>
+</ul>
 <h1 id="whats-next"><a href="#whats-next" class="anchor-link"
 aria-hidden="true"></a>What’s next?</h1>
 <h1 id="index"><a href="#index" class="anchor-link"
 aria-hidden="true"></a>Index</h1>
+<h2 id="instructions"><a href="#instructions" class="anchor-link"
+aria-hidden="true"></a>Instructions</h2>
+<ul>
+<li><a href="#insn-add"><code>add</code></a></li>
+<li><a href="#insn-addi"><code>addi</code></a></li>
+<li><a href="#insn-and"><code>and</code></a></li>
+<li><a href="#insn-andi"><code>andi</code></a></li>
+<li><a href="#insn-auipc"><code>auipc</code></a></li>
+<li><a href="#insn-beq"><code>beq</code></a></li>
+<li><a href="#insn-bge"><code>bge</code></a></li>
+<li><a href="#insn-bgeu"><code>bgeu</code></a></li>
+<li><a href="#insn-blt"><code>blt</code></a></li>
+<li><a href="#insn-bltu"><code>bltu</code></a></li>
+<li><a href="#insn-bne"><code>bne</code></a></li>
+<li><a href="#insn-call"><code>call</code></a></li>
+<li><a href="#insn-csrr"><code>csrr</code></a></li>
+<li><a href="#insn-csrrc"><code>csrrc</code></a></li>
+<li><a href="#insn-csrrci"><code>csrrci</code></a></li>
+<li><a href="#insn-csrrs"><code>csrrs</code></a></li>
+<li><a href="#insn-csrrsi"><code>csrrsi</code></a></li>
+<li><a href="#insn-csrrw"><code>csrrw</code></a></li>
+<li><a href="#insn-csrrwi"><code>csrrwi</code></a></li>
+<li><a href="#insn-csrw"><code>csrw</code></a></li>
+<li><a href="#insn-ebreak"><code>ebreak</code></a></li>
+<li><a href="#insn-ecall"><code>ecall</code></a></li>
+<li><a href="#insn-j"><code>j</code></a></li>
+<li><a href="#insn-jal"><code>jal</code></a></li>
+<li><a href="#insn-jalr"><code>jalr</code></a></li>
+<li><a href="#insn-jr"><code>jr</code></a></li>
+<li><a href="#insn-la"><code>la</code></a></li>
+<li><a href="#insn-lb"><code>lb</code></a></li>
+<li><a href="#insn-lbu"><code>lbu</code></a></li>
+<li><a href="#insn-lh"><code>lh</code></a></li>
+<li><a href="#insn-lhu"><code>lhu</code></a></li>
+<li><a href="#insn-li"><code>li</code></a></li>
+<li><a href="#insn-lui"><code>lui</code></a></li>
+<li><a href="#insn-lw"><code>lw</code></a></li>
+<li><a href="#insn-mret"><code>mret</code></a></li>
+<li><a href="#insn-mv"><code>mv</code></a></li>
+<li><a href="#insn-or"><code>or</code></a></li>
+<li><a href="#insn-ori"><code>ori</code></a></li>
+<li><a href="#insn-ret"><code>ret</code></a></li>
+<li><a href="#insn-sb"><code>sb</code></a></li>
+<li><a href="#insn-sh"><code>sh</code></a></li>
+<li><a href="#insn-sll"><code>sll</code></a></li>
+<li><a href="#insn-slli"><code>slli</code></a></li>
+<li><a href="#insn-slt"><code>slt</code></a></li>
+<li><a href="#insn-slti"><code>slti</code></a></li>
+<li><a href="#insn-sltiu"><code>sltiu</code></a></li>
+<li><a href="#insn-sltu"><code>sltu</code></a></li>
+<li><a href="#insn-sra"><code>sra</code></a></li>
+<li><a href="#insn-srai"><code>srai</code></a></li>
+<li><a href="#insn-srl"><code>srl</code></a></li>
+<li><a href="#insn-srli"><code>srli</code></a></li>
+<li><a href="#insn-sub"><code>sub</code></a></li>
+<li><a href="#insn-sw"><code>sw</code></a></li>
+<li><a href="#insn-xor"><code>xor</code></a></li>
+<li><a href="#insn-xori"><code>xori</code></a></li>
+</ul>
+<h2 id="registers-and-csrs"><a href="#registers-and-csrs"
+class="anchor-link" aria-hidden="true"></a>Registers and CSRs</h2>
+<ul>
+<li><a href="#reg-x0"><code>x0</code></a></li>
+<li><a href="#reg-x1-through-x31"><code>x1</code> through
+<code>x31</code></a></li>
+</ul>
+<ul>
+<li><a href="#regalias-a0-through-a7"><code>a0</code> through
+<code>a7</code></a></li>
+<li><a href="#regalias-gp"><code>gp</code></a></li>
+<li><a href="#regalias-ra"><code>ra</code></a></li>
+<li><a href="#regalias-s0-through-s11"><code>s0</code> through
+<code>s11</code></a></li>
+<li><a href="#regalias-sp"><code>sp</code></a></li>
+<li><a href="#regalias-t0-through-t6"><code>t0</code> through
+<code>t6</code></a></li>
+<li><a href="#regalias-tp"><code>tp</code></a></li>
+<li><a href="#regalias-zero"><code>zero</code></a></li>
+</ul>
+<ul>
+<li><a href="#csr-cycle"><code>cycle</code></a></li>
+<li><a href="#csr-cycleh"><code>cycleh</code></a></li>
+<li><a href="#csr-instret"><code>instret</code></a></li>
+<li><a href="#csr-instreth"><code>instreth</code></a></li>
+<li><a href="#csr-mcause"><code>mcause</code></a></li>
+<li><a href="#csr-mepc"><code>mepc</code></a></li>
+<li><a href="#csr-mscratch"><code>mscratch</code></a></li>
+<li><a href="#csr-mstatus"><code>mstatus</code></a></li>
+<li><a href="#csr-mtval"><code>mtval</code></a></li>
+</ul>
+<h2 id="special-assembly-syntax"><a href="#special-assembly-syntax"
+class="anchor-link" aria-hidden="true"></a>Special assembly syntax</h2>
+<ul>
+<li><a href="#dir-.2byte"><code>.2byte</code></a></li>
+<li><a href="#dir-.4byte"><code>.4byte</code></a></li>
+<li><a href="#dir-.byte"><code>.byte</code></a></li>
+<li><a href="#dir-.half"><code>.half</code></a></li>
+<li><a href="#dir-.word"><code>.word</code></a></li>
+</ul>
+<ul>
+<li><a href="#rel-%hi()"><code>%hi()</code></a></li>
+<li><a href="#rel-%lo()"><code>%lo()</code></a></li>
+<li><a href="#rel-%pcrel_hi()"><code>%pcrel_hi()</code></a></li>
+<li><a href="#rel-%pcrel_lo()"><code>%pcrel_lo()</code></a></li>
+</ul>
+<h2 id="other-terms"><a href="#other-terms" class="anchor-link"
+aria-hidden="true"></a>Other terms</h2>
 <ul>
 <li><a href="#term-align">align</a></li>
 <li><a href="#term-aligned">aligned</a></li>
@@ -1766,11 +2762,13 @@ aria-hidden="true"></a>Index</h1>
 <li><a href="#term-call-saved">call-saved</a></li>
 <li><a href="#term-control-and-status-registers">control and status
 registers</a></li>
+<li><a href="#term-counters">counters</a></li>
 <li><a href="#term-csrs">CSRs</a></li>
 <li><a href="#term-destination-register">destination register</a></li>
 <li><a href="#term-devices">devices</a></li>
 <li><a href="#term-directive">directive</a></li>
 <li><a href="#term-endianness">endianness</a></li>
+<li><a href="#term-exceptions">exceptions</a></li>
 <li><a href="#term-extensions">extensions</a></li>
 <li><a href="#term-general-purpose-registers">general purpose
 registers</a></li>
@@ -1778,6 +2776,7 @@ registers</a></li>
 <li><a href="#term-imm"><code>imm</code></a></li>
 <li><a href="#term-immediate-value">immediate value</a></li>
 <li><a href="#term-instruction-syntax">instruction syntax</a></li>
+<li><a href="#term-interrupts">interrupts</a></li>
 <li><a href="#term-jump">jump</a></li>
 <li><a href="#term-load">load</a></li>
 <li><a href="#term-m-mode">M-mode</a></li>
@@ -1803,93 +2802,11 @@ code</a></li>
 <li><a href="#term-source-register">source register</a></li>
 <li><a href="#term-stack">stack</a></li>
 <li><a href="#term-store">store</a></li>
+<li><a href="#term-traps">traps</a></li>
 <li><a href="#term-two’s-complement">two’s complement</a></li>
 <li><a href="#term-u-mode">U-mode</a></li>
 <li><a href="#term-user">User</a></li>
 <li><a href="#term-word">word</a></li>
 <li><a href="#term-zero-extension">zero extension</a></li>
-</ul>
-<ul>
-<li><a href="#reg-x0"><code>x0</code></a></li>
-<li><a href="#reg-x1-through-x31"><code>x1</code> through
-<code>x31</code></a></li>
-</ul>
-<ul>
-<li><a href="#regalias-a0-through-a7"><code>a0</code> through
-<code>a7</code></a></li>
-<li><a href="#regalias-gp"><code>gp</code></a></li>
-<li><a href="#regalias-ra"><code>ra</code></a></li>
-<li><a href="#regalias-s0-through-s11"><code>s0</code> through
-<code>s11</code></a></li>
-<li><a href="#regalias-sp"><code>sp</code></a></li>
-<li><a href="#regalias-t0-through-t6"><code>t0</code> through
-<code>t6</code></a></li>
-<li><a href="#regalias-tp"><code>tp</code></a></li>
-<li><a href="#regalias-zero"><code>zero</code></a></li>
-</ul>
-<ul>
-<li><a href="#csr-cycle"><code>cycle</code></a></li>
-<li><a href="#csr-cycleh"><code>cycleh</code></a></li>
-<li><a href="#csr-instret"><code>instret</code></a></li>
-<li><a href="#csr-instreth"><code>instreth</code></a></li>
-</ul>
-<ul>
-<li><a href="#insn-add"><code>add</code></a></li>
-<li><a href="#insn-addi"><code>addi</code></a></li>
-<li><a href="#insn-and"><code>and</code></a></li>
-<li><a href="#insn-andi"><code>andi</code></a></li>
-<li><a href="#insn-auipc"><code>auipc</code></a></li>
-<li><a href="#insn-beq"><code>beq</code></a></li>
-<li><a href="#insn-bge"><code>bge</code></a></li>
-<li><a href="#insn-bgeu"><code>bgeu</code></a></li>
-<li><a href="#insn-blt"><code>blt</code></a></li>
-<li><a href="#insn-bltu"><code>bltu</code></a></li>
-<li><a href="#insn-bne"><code>bne</code></a></li>
-<li><a href="#insn-call"><code>call</code></a></li>
-<li><a href="#insn-j"><code>j</code></a></li>
-<li><a href="#insn-jal"><code>jal</code></a></li>
-<li><a href="#insn-jalr"><code>jalr</code></a></li>
-<li><a href="#insn-jr"><code>jr</code></a></li>
-<li><a href="#insn-la"><code>la</code></a></li>
-<li><a href="#insn-lb"><code>lb</code></a></li>
-<li><a href="#insn-lbu"><code>lbu</code></a></li>
-<li><a href="#insn-lh"><code>lh</code></a></li>
-<li><a href="#insn-lhu"><code>lhu</code></a></li>
-<li><a href="#insn-li"><code>li</code></a></li>
-<li><a href="#insn-lui"><code>lui</code></a></li>
-<li><a href="#insn-lw"><code>lw</code></a></li>
-<li><a href="#insn-mv"><code>mv</code></a></li>
-<li><a href="#insn-or"><code>or</code></a></li>
-<li><a href="#insn-ori"><code>ori</code></a></li>
-<li><a href="#insn-ret"><code>ret</code></a></li>
-<li><a href="#insn-sb"><code>sb</code></a></li>
-<li><a href="#insn-sh"><code>sh</code></a></li>
-<li><a href="#insn-sll"><code>sll</code></a></li>
-<li><a href="#insn-slli"><code>slli</code></a></li>
-<li><a href="#insn-slt"><code>slt</code></a></li>
-<li><a href="#insn-slti"><code>slti</code></a></li>
-<li><a href="#insn-sltiu"><code>sltiu</code></a></li>
-<li><a href="#insn-sltu"><code>sltu</code></a></li>
-<li><a href="#insn-sra"><code>sra</code></a></li>
-<li><a href="#insn-srai"><code>srai</code></a></li>
-<li><a href="#insn-srl"><code>srl</code></a></li>
-<li><a href="#insn-srli"><code>srli</code></a></li>
-<li><a href="#insn-sub"><code>sub</code></a></li>
-<li><a href="#insn-sw"><code>sw</code></a></li>
-<li><a href="#insn-xor"><code>xor</code></a></li>
-<li><a href="#insn-xori"><code>xori</code></a></li>
-</ul>
-<ul>
-<li><a href="#dir-.2byte"><code>.2byte</code></a></li>
-<li><a href="#dir-.4byte"><code>.4byte</code></a></li>
-<li><a href="#dir-.byte"><code>.byte</code></a></li>
-<li><a href="#dir-.half"><code>.half</code></a></li>
-<li><a href="#dir-.word"><code>.word</code></a></li>
-</ul>
-<ul>
-<li><a href="#rel-%hi()"><code>%hi()</code></a></li>
-<li><a href="#rel-%lo()"><code>%lo()</code></a></li>
-<li><a href="#rel-%pcrel_hi()"><code>%pcrel_hi()</code></a></li>
-<li><a href="#rel-%pcrel_lo()"><code>%pcrel_lo()</code></a></li>
 </ul>
 </body>

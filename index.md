@@ -11,8 +11,8 @@ Interested in the code? Want to report an issue? Check out the GitHub page:
 # Introduction
 
 Inspired by [Easy 6502 by Nick Morgan][easy6502], this is a quick-ish
-introduction to RISC-V assembly programming. This introduction is intended for
-those with a basic familiarity with low level computer science concepts, but
+introductory tutorial to RISC-V assembly programming. This tutorial is intended
+for those with a basic familiarity with low level computer science concepts, but
 unfamiliar with RISC-V. If you're curious about RISC-V, I hope this will be a
 good start to your journey to learning about it.
 
@@ -1760,21 +1760,103 @@ The [control and status registers]{x=term} ([CSRs]{x=term}) deal with various
 features that are in some sense "special". No I don't have a better explanation
 of what "special" means.
 
+Six instructions are available for manipulating CSRs.
+
+```
+csrrw rd, csr, rs1
+csrrs rd, csr, rs1
+csrrc rd, csr, rs1
+csrrwi rd, csr, uimm5
+csrrsi rd, csr, uimm5
+csrrci rd, csr, uimm5
+```
+
+To refer to a CSR in these instructions, use its name in assembly code. We'll
+get to those in a bit.
+
+The pattern works like this. Each of the instructions *atomically* reads the old
+value of the CSR, and writes the new value based on some operation performed on
+the old value and the last operand. The possible operations are:
+
+- [`csrrw`]{x=insn} ("CSR read write"): `{ csr = rs1; rd = csr_old; }`
+- [`csrrs`]{x=insn} ("CSR read set"): `{ csr = csr | rs1; rd = csr_old; }`
+- [`csrrc`]{x=insn} ("CSR read clear"): `{ csr = csr & ~rs1; rd = csr_old; }`
+
+Where `&`, `|`, `~` are bitwise "and", "or", "not" respectively.
+
+Specifically, note that `rd` and `rs1` can be the same. For example, this
+instruction swaps the value in `a0` and `mscratch`:
+
+```
+csrrw a0, mscratch, a0
+```
+
+For the "immediate" variants, instead of a register, they take an
+"unsigned"/zero-extended 5-bit immediate value, i.e. an immediate value 0
+through 31, inclusive. This is represented using `uimm5` in the assembly syntax
+description. The operation is the same otherwise.
+
+- [`csrrwi`]{x=insn} ("CSR read write immediate"): `{ csr = uimm5; rd = csr_old; }`
+- [`csrrsi`]{x=insn} ("CSR read set immediate"): `{ csr = csr | uimm5; rd = csr_old; }`
+- [`csrrci`]{x=insn} ("CSR read clear immediate"): `{ csr = csr & ~uimm5; rd = csr_old; }`
+
+The full feature set of these instructions are designed for manipulating bit
+fields in CSRs, which we will not be doing that much of in this tutorial. Still,
+this orthogonal design should be fairly intuitive to remember.
+
+CSRs and fields in CSRs do not behave like general purpose registers: Some of
+them are read/write, some are read-only. Also, invalid values have special
+behaviors. We will touch on more details as we introduce the individual CSRs
+themselves, but one thing you may have noticed is that we don't seem to have
+read-only CSR instructions. Read-only access is achieved using special cases in
+the instruction encodings:
+
+- `csrrs` and `csrrc` do not write to the CSR if `rs1` is `x0` (a.k.a. `zero`)
+  (Note that just the value of `rs1` being 0 is not enough.)
+- `csrrsi` and `csrrci` do not write to the CSR if `uimm5` is 0.
+
+While we're at it:
+
+- `csrrw` and `csrrwi` do not read the CSR if `rd` is `x0` (a.k.a. `zero`).
+  (Note that writing to `x0` has no effect anyway, since it's constant 0.)
+
+(No standard RISC-V CSR is write-only, or has side effects on read.)
+
+As a convenience, the pseudoinstructions [`csrw`]{x=insn} ("CSR read") and
+[`csrr`]{x=insn} ("CSR write") are available. `csrw csr, rs1` expands to `csrrw
+x0, csr, rs1`. Meanwhile, `csrr rd, csr` expands specifically to `csrrs rd, csr,
+x0`, just so we can agree on an encoding.
+
+```
+csrw csr, rs1
+csrr rd, csr
+```
+
+You may have seen these CSR things if you've scrolled down on the register view.
+Yes, we're finally getting into those.
+
 ## Counters
 
-Two basic read-only counters are [`cycle`]{x=csr} and [`instret`]{x=csr}. These
-counters, well, *count* the number of "cycles" and "instructions retired".
-"Retried" is a technical term basically meaning "successfully completed".
+An example of CSRs is [counters]{x=term}. Two basic read-only counters are
+[`cycle`]{x=csr} and [`instret`]{x=csr}. These counters, well, *count* the
+number of "cycles" and "instructions retired". "Retried" is a technical term
+basically meaning "successfully completed".
 
 Since a 32-bit counter will overflow quite fast, on RV32, the counters have
 "high" counterparts: [`cycleh`]{x=csr} and [`instreth`]{x=csr}. So, for example,
-the full cycle counter has 64 bits, with the lower 32 bits in `cycle` and higher
-32 bits in `cycleh`.
+the full cycle counter has 64 bits, with the lower 32 bits in the CSR `cycle`
+and higher 32 bits in the CSR `cycleh`.
+
+While the emulator is running, scroll down on the register view panel, and on
+the bottom you'll see the values of these counters. For convenience, They're
+shown combined, so, `cycle = 0x11223344_55667788` means `cycleh` is
+`0x11223344`, and `cycle` is `0x55667788`.
 
 On real hardware `cycle` is coupled to the clock cycle. In this emulator, every
 time you press "Step", it counts as a cycle. When you press "Run" and it starts,
-well, running, a certain number of cycles happen periodically. Let's look at a
-really simple example:
+well, running, a certain number of cycles happen periodically.
+
+Let's look at a really simple example:
 
 ```emulator
     addi a0, a0, 1
@@ -1788,18 +1870,815 @@ because the final `ebreak` instruction never actually completes.
 
 (Do not confuse "retired" with "retried".)
 
-## Privileged state
+A program can read its own counters. For example, this fun little program loops
+until the cycle count is over 1000, assuming the low 32 bits doesn't overflow
+before it has time to react:
+
+```emulator
+    li t1, 1000
+loop:
+    csrr t0, cycle
+    blt t0, t1, loop
+
+    ebreak
+```
+
+## Current privilege level
+
+Technically `cycle` and `instret` are not part of the privileged architecture.
+The real fun begins *now*.
+
+The emulator shows the current privilege level as `(priv)`. It is in parentheses
+to remind you of a very important fact:
+
+*There is no CSR for the current privilege level.*
+
+In general, it is not possible for a RISC-V program to learn what privilege
+level it's in. This is required for the [Popek and Goldberg conditions of
+virtualization][wp-p-g-conditions] to work, specifically because being able to
+read the current privilege level at a lower-than-maximum privilege level would
+be a "sensitive" but "unprivileged" instruction.
+
+[wp-p-g-conditions]: https://en.wikipedia.org/wiki/Popek_and_Goldberg_virtualization_requirements
+
+If you're writing a program for a certain privilege level, you should simply
+assume that it is correctly being run at that privilege level.
 
 # Exceptions
 
+## Exception entry
+
+A fundamental way an operating system does its job is through handling
+exceptions. In general, [exceptions]{x=term} occur when there's a problem with a
+specific instruction, and execution cannot continue. For example, since `cycle`
+is a read-only CSR, writing to it is an illegal instruction:
+
+```emulator
+    csrw cycle, x0
+```
+
+Since we have no exception handling in the program, we'll have to inspect what
+happened manually in the emulator. Indeed, a lot has happened:
+
+Firstly, this message tells you that an exception happened:
+
+```
+[ Exception: Illegal instruction (2) | tval = 0xc0001073, epc = 0x4000000c ]
+```
+
+The same information is now also available in the CSRs, as follows:
+
+- [`mcause`]{x=csr} ("M-mode trap cause"): The kind of exception.
+- [`mepc`]{x=csr} ("M-mode exception pc"): The address of the instruction that
+  caused the exception.
+- [`mtval`]{x=csr} ("M-mode trap value"): Extra information about the exception
+- [`mstatus`]{x=csr} ("M-mode status"): It is set to `0x00001800`. The two bits
+  in the middle, `mstatus[12:11]` (In C syntax, `(mstatus >> 11) & 0x3`) is the
+  `mstatus.MPP` ("M-mode previous privilege level") field, which contains 3,
+  meaning that the exception occurred while running in Machine mode.
+
+When an exception happens, in addition to recording the exception information in
+these CSR fields, `pc` is set to `mtvec`, which is supposed to be the handler
+address. Let's write ourselves an exception handler that simply prints a message
+and stops the emulator, and see the handling in action:
+
+```emulator
+    la t0, handler
+    csrw mtvec, t0
+
+    # Now cause an exception
+    csrw cycle, x0
+
+    # Rest of the main program is never executed
+    addi a0, a0, 1
+    addi a0, a0, 1
+
+handler:
+    la a0, msg
+    call puts
+    ebreak
+
+msg:
+    .byte 0x4f, 0x68, 0x20, 0x6e, 0x6f, 0x21, 0x0a, 0x00
+
+    # void puts(const char *);
+puts:
+    lui t1, %hi(0x10000000)
+1:
+    lb t0, 0(a0)
+    beq t0, zero, 2f
+    sw t0, 0(t1)
+    addi a0, a0, 1
+    j 1b
+
+2:
+    ret
+```
+
+Yeah it just prints `Oh no!` on error. Baby steps...
+
+The checkboxes "Pause on exc." and "Print on exc." control whether the emulator
+should pause or print a message, respectively, when an exception occurs. You can
+uncheck those if you want the exception handler set in the program to run
+without interference.
+
+(Another case that will cause a jump to `mtvec` is [interrupts]{x=term}.
+However, this feature does not exist in the emulator. The two cases are
+collectively called [traps]{x=term}.)
+
+## Exception causes
+
+These are the exceptions possible in this emulator, and their respective numeric
+codes:
+
+|      | Description |
+|:-----|:---|
+| 0     | Instruction address misaligned |
+| 1     | Instruction access fault |
+| 2     | Illegal instruction |
+| 3     | Breakpoint |
+| 5     | Load access fault |
+| 7     | Store/AMO access fault |
+| 8     | Environment call from User mode |
+| 11    | Environment call from Machine mode |
+
+"Instruction address misaligned" happens when attempting to jump to an
+instruction that is not 4-byte aligned. The exception happens on the jump or
+branch instruction, not the target.
+
+"Load access fault" and "Store/AMO access fault" happens when accessing a
+invalid memory address, or accessing a memory address in an invalid way.
+
+("AMO" stands for "atomic memory operation", which we will not talk about and is
+not featured in the emulator.)
+
+"Illegal instruction" happens not only in the self explanatory way when an
+invalid instruction is executed, but also when accessing a CSR in an invalid
+way, or from too low a privilege level.
+
+"Breakpoint", "Environment call from User mode" and "Environment call from
+Machine mode" will be explained in a future section.
+
+## Exception return
+
+The [`mret`]{x=insn} ("M-mode return") instruction performs the reverse of part
+of what happens when an exception occurs. To be precise, what happens is:
+
+- The current privilege levels is set back to `mstatus.MPP`
+- `mstatus.MPP` is set to 0
+- `pc` is set to `mepc`
+
+(You can think of the privilege mode bits as shifting in a chain <code>0 &rarr;
+MPP &rarr; priv</code>. And, to be even more precise, `mstatus.MPP` is set to
+the lowest supported privilege mode since it's not supposed to contain
+unsupported modes.)
+
+The assembly syntax is simply:
+
+```
+mret
+```
+
+If we do `mret` after getting an exception, then we simply go back to retrying
+the same instruction again. This is useful for more featureful implementations,
+where for example, after handling a page fault the correct course of action is
+to retry the faulting instruction.
+
+However, `mstatus` and `mepc` are also writable. This gives us more flexibility
+in the use of `mret`.
+
+# Handling User mode
+
+## Entering User mode
+
+Even though `mret` is named "return", it is in fact the only way to lower the
+privilege level. We can use the behavior of `mret` to enter User mode. Here's an
+example of a User mode program that does something bad:
+
+```emulator
+    la t0, handler
+    csrw mtvec, t0
+
+    lui t0, %hi(0x1800)
+    addi t0, t0, %lo(0x1800)
+
+    # Clear MPP to 0
+    csrrc zero, mstatus, t0
+
+    la t0, user_entry
+    csrw mepc, t0
+    mret
+
+handler:
+    ebreak # Just stop the emulator
+
+user_entry:
+    # Try to access an M-mode CSR
+    csrr a0, mstatus
+```
+
+As you can see, after we enter User mode, all of the CSRs used for exception
+handling become completely inaccessible, not even readable. As with writing a
+read-only CSR, accessing an CSR without permission also causes an illegal
+instruction exception. Moreover, when an exception happens, we go back to
+Machine mode, so the exception handler runs in Machine mode. Here it does
+nothing except
+
+## Intentionally causing an exception
+
+Sometimes, a program may wish to intentionally cause an exception.
+There are several well-defined way to do that:
+
+- The instruction `csrrw zero, cycle, zero` is specifically an illegal
+  instruction. It causes an "Illegal instruction" exception.
+- The instruction [`ebreak`]{x=insn} causes a "Breakpoint" exception
+- The instruction [`ecall`]{x=insn} causes an "Environment call from User mode"
+  exception when executed in User mode, and "Environment call from Machine mode"
+  exception when executed in Machine mode.
+
+Give those exceptions a try here:
+
+```emulator
+    la t0, handler
+    csrw mtvec, t0
+
+    lui t0, %hi(0x1800)
+    addi t0, t0, %lo(0x1800)
+
+    # Clear MPP to 0
+    csrrc zero, mstatus, t0
+
+    la t0, user_entry
+    csrw mepc, t0
+    mret
+
+handler:
+    ebreak # Just stop the emulator
+
+user_entry:
+    ebreak
+    # ecall
+    # csrrw zero, cycle, zero
+```
+
+As the names suggest, `ebreak` is used for debugging breakpoints. As a special
+case, in this emulator `ebreak` in Machine mode stops the emulator. You can
+think of it as the emulator being a debugger, and the debugger catching the
+breakpoint.
+
+Meanwhile, `ecall` is used for things like system calls. "Environment call from
+User mode" is a distinct exception cause code to make it easy to check
+specifically for this case.
+
+## Saving and restoring all registers
+
+One thing that you would want in your trap handler is to not trust or disturb
+*any* general purpose registers in the code that you've trapped from, unless you
+intentionally want to do so, for example to return a value from a system call.
+So you'd want to save all the registers to memory, before doing anything else.
+However, accessing memory requires a general purpose register.
+
+The [`mscratch`]{x=csr} ("M-mode scratch") CSR can help with this. This
+register, unlike all the others, have no special functionality. It can hold any
+32-bit value. However, like all the other M-mode CSRs, it can only be accessed
+in Machine mode. User mode code cannot change the value of it.
+
+So for example, you can stash the operating system stack pointer in `mscratch`
+while executing in User mode. At the top of the handler, `csrrw sp, mscratch,
+sp` to swap from the user stack pointer to the operating system stack pointer.
+
+```
+handler:
+    csrrw sp, mscratch, sp
+    # Save registers except sp
+    csrr t0, mscratch
+    # t0 = user sp, save it
+    # Save user pc
+    ...
+```
+
+And, to restore:
+
+```
+    lw t0, ... # Load user pc
+    csrw mepc, t0
+    lw t0, ... # Load user sp
+    csrw mscratch, t0
+    # Restore registers except sp
+    csrrw sp, mscratch, sp
+    mret
+```
+
+We'll see the full code for this in the following section.
+
+# Writing a very very bare bones operating system
+
+We have enough of to write a very very bare bones operating system. It will
+support these features:
+
+- System calls:
+  - `a7 = 1`: putchar, `a0` is the byte to write
+  - `a7 = 2`: exit
+- Exception handling: Print error message and exit
+
+We design the exception handling as follows:
+
+- During most of the time in M-mode, `mscratch` is 0
+- While in U-mode, `mscratch` points to the operating system stack pointer
+- At trap handler, if `mscratch` is 0, the exception came from M-mode, which we
+  cannot handle, so report a fatal exception.
+- If it did come from U-mode, allocate 128 bytes on the stack to save the U-mode
+  registers, and call `trap_main`, which manipulates U-mode registers in memory
+- After `trap_main`, we restore from memory, deallocate it from the stack, and
+  go back to U-mode, as outlined in the previous section.
+
+The structure to save registers in is fairly simple:
+
+```
+struct regs {
+  unsigned long pc;
+  unsigned long ra; // x1
+  unsigned long sp; // x2
+  ...
+  unsigned long t6; // x31
+};
+```
+
+Basically you can think of it as an array where element 0 is pc, and 1 through
+31 is registers x1 through x31.
+
+Inside `trap_main`, we check `mcause` to see if it's a system call. If it is, we
+dispatch based on `a7`. If it's not, we report an exception from U-mode.
+
+At the beginning, we simply initialize the `struct regs` structure on stack,
+initialize user `sp` and `pc` in it, and jump to the same code that handles
+returning to U-mode.
+
+Here's the assembly code with User mode code at the bottom. You may want to
+uncheck "Pause on exc." and "Print on exc." for convenience.
+
+Do not be too hard on yourself if you have trouble understanding the code fully.
+This is, after all, a fairly complete OS kernel entry and exit implementation.
+Really, the most important part I'm showing you here is that it is possible.
+
+```emulator
+    # Reserve 256 bytes for OS stack
+    # User stack starts 256 bytes lower
+    addi t2, sp, -256
+
+    la t0, handler
+    csrw mtvec, t0
+
+    # Prepare struct reg
+    addi sp, sp, -128
+
+    mv a0, sp # struct regs *
+
+    # Set user pc to user_entry
+    la t0, user_entry
+    sw t0, 0(a0)
+
+    # Set user sp
+    sw t2, 8(a0)
+
+    j enter_user
+
+    # void trap_main(struct regs *regs)
+trap_main:
+    # Save regs based on calling convention
+    addi sp, sp, -16
+    sw s0, (sp)
+    sw ra, 4(sp)
+
+    mv s0, a0
+    csrr a1, mcause
+    li t1, 8 # "Environment call from User mode"
+    bne a1, t1, do_bad_exception # Not ecall, that's bad
+
+    # Call do_syscall with args from ecall
+
+    lw a0, 40(s0)
+    lw a1, 44(s0)
+    lw a2, 48(s0)
+    lw a3, 52(s0)
+    lw a4, 56(s0)
+    lw a5, 60(s0)
+    lw a6, 64(s0)
+    lw a7, 68(s0)
+    call do_syscall
+
+    sw a0, 40(s0)   # Set user a0 return value
+
+    # Bump user pc by 4
+    # Skip over ecall instruction
+    lw t0, 0(s0)
+    addi t0, t0, 4
+    sw t0, 0(s0)
+
+    # Restore regs based on calling convention
+    lw s0, (sp)
+    lw ra, 4(sp)
+    addi sp, sp, 16
+    ret
+
+    # a0 = arg0, a7 = syscall number
+do_syscall:
+    # Dispatch based on syscall number
+    li t0, 1
+    beq a7, t0, sys_putchar
+    li t0, 2
+    beq a7, t0, sys_exit
+
+    # Bad syscall
+    li a0, -1
+    ret
+
+    # int sys_putchar(char c)
+sys_putchar:
+    # Save regs based on calling convention
+    addi sp, sp, -16
+    sw s0, (sp)
+    sw ra, 4(sp)
+
+    call kputchar
+    li a0, 0
+
+    # Restore regs based on calling convention
+    lw s0, (sp)
+    lw ra, 4(sp)
+    addi sp, sp, 16
+    ret
+
+    # [[noreturn]] void sys_exit()
+sys_exit:
+    # Just stop the emulator
+    ebreak
+
+    # [[noreturn]] void do_bad_exception(struct regs *regs, long cause)
+    # Print message about bad U-mode exception, then stop
+do_bad_exception:
+    mv s0, a1
+
+    # Equivalent of printf("Exception 0x%x", cause);
+    la a0, msg_exception
+    call kputs
+
+    mv a0, s0
+    la t0, hex_chars
+    add t0, t0, a0
+    lbu a0, (t0)
+    call kputchar
+
+    li a0, 0xa # '\n'
+    call kputchar
+
+    # Stop the emulator
+    ebreak
+
+fatal:
+    # Print message about fatal exception, then stop
+    la a0, msg_fatal
+    call kputs
+    ebreak
+
+msg_exception:
+    # "Exception 0x"
+    .byte 0x45, 0x78, 0x63, 0x65, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x20, 0x30, 0x78, 0x00
+
+msg_fatal:
+    # "Fatal exception\n"
+    .byte 0x46, 0x61, 0x74, 0x61, 0x6c, 0x20, 0x65, 0x78, 0x63, 0x65, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x0a, 0x00
+
+hex_chars:
+    # "0123456789abcdef"
+    .byte 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x00
+
+    .byte 0x00 # Alignment padding
+    # Otherwise, the next instruction wouldn't be aligned
+
+    # void kputs(const char *);
+    # Print string by accessing MMIO directly
+kputs:
+    lui t1, %hi(0x10000000)
+1:
+    lb t0, 0(a0)
+    beq t0, zero, 2f
+    sw t0, 0(t1)
+    addi a0, a0, 1
+    j 1b
+2:
+    ret
+
+    # void kputchar(char);
+    # Print byte by accessing MMIO directly
+kputchar:
+    lui t1, %hi(0x10000000)
+    sw a0, (t1)
+    ret
+
+    # The big exception handler
+handler:
+    csrrw sp, mscratch, sp
+
+    # If mscratch was 0, this is exception from M-mode
+    # Can't handle that, it's a fatal error
+    beq sp, zero, fatal
+
+    # Save all registers
+    addi sp, sp, -128
+    sw x1, 4(sp)
+    # x2/sp handled separately
+    sw x3, 12(sp)
+    sw x4, 16(sp)
+    sw x5, 20(sp)
+    sw x6, 24(sp)
+    sw x7, 28(sp)
+    sw x8, 32(sp)
+    sw x9, 36(sp)
+    sw x10, 40(sp)
+    sw x11, 44(sp)
+    sw x12, 48(sp)
+    sw x13, 52(sp)
+    sw x14, 56(sp)
+    sw x15, 60(sp)
+    sw x16, 64(sp)
+    sw x17, 68(sp)
+    sw x18, 72(sp)
+    sw x19, 76(sp)
+    sw x20, 80(sp)
+    sw x21, 84(sp)
+    sw x22, 88(sp)
+    sw x23, 92(sp)
+    sw x24, 96(sp)
+    sw x25, 100(sp)
+    sw x26, 104(sp)
+    sw x27, 108(sp)
+    sw x28, 112(sp)
+    sw x29, 116(sp)
+    sw x30, 120(sp)
+    sw x31, 124(sp)
+
+    # Save user sp, also set mscratch to 0 in M-mode
+    csrrw t0, mscratch, zero
+    sw t0, 8(sp)
+
+    # Save user pc
+    csrr t0, mepc
+    sw t0, 0(sp)
+
+    mv a0, sp
+    call trap_main
+    # ... falls through after trap_main ...
+enter_user:
+    # Set mstatus.MPP = User
+    lui t0, %hi(0x1800)
+    addi t0, t0, %lo(0x1800)
+    csrrc zero, mstatus, t0
+
+    # Set mepc = user pc
+    # Will actually jump with mret
+    lw t0, 0(sp)
+    csrw mepc, t0
+
+    # Set mscratch = user sp temporarily
+    # Will swap right before mret
+    lw t0, 8(sp)
+    csrw mscratch, t0
+
+    # Restore other registers from stack
+    lw x1, 4(sp)
+    # x2/sp handled separately
+    lw x3, 12(sp)
+    lw x4, 16(sp)
+    lw x5, 20(sp)
+    lw x6, 24(sp)
+    lw x7, 28(sp)
+    lw x8, 32(sp)
+    lw x9, 36(sp)
+    lw x10, 40(sp)
+    lw x11, 44(sp)
+    lw x12, 48(sp)
+    lw x13, 52(sp)
+    lw x14, 56(sp)
+    lw x15, 60(sp)
+    lw x16, 64(sp)
+    lw x17, 68(sp)
+    lw x18, 72(sp)
+    lw x19, 76(sp)
+    lw x20, 80(sp)
+    lw x21, 84(sp)
+    lw x22, 88(sp)
+    lw x23, 92(sp)
+    lw x24, 96(sp)
+    lw x25, 100(sp)
+    lw x26, 104(sp)
+    lw x27, 108(sp)
+    lw x28, 112(sp)
+    lw x29, 116(sp)
+    lw x30, 120(sp)
+    lw x31, 124(sp)
+    addi sp, sp, 128
+
+    # Actually restore sp
+    csrrw sp, mscratch, sp
+    mret    # Time to go to user mode!
+
+################
+
+user_entry:
+    la a0, msg_hello
+    call puts
+    call exit
+
+    # void puts(const char *);
+    # Print string using system call
+puts:
+    addi sp, sp, -16
+    sw s0, (sp)
+    sw ra, 4(sp)
+
+    mv s0, a0
+1:
+    lb a0, 0(s0)
+    beq a0, zero, 2f
+    call putchar
+    addi s0, s0, 1
+    j 1b
+2:
+
+    lw s0, (sp)
+    lw ra, 4(sp)
+    addi sp, sp, 16
+    ret
+
+    # void putchar(const char *);
+    # Print byte using system call
+putchar:
+    li a7, 1
+    ecall
+    ret
+
+    # [[noreturn]] void exit();
+exit:
+    li a7, 2
+    ecall
+    # Not supposed to return, just to be safe
+    ebreak
+
+msg_hello:
+    .byte 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21, 0x0a, 0x00
+```
+
+For reference, here's some of the OS code in pseudo-C.
+
+```
+void trap_main(struct regs *regs) {
+    unsigned long cause = csr_read(mcause);
+    if (cause != 8)
+        do_bad_exception(regs, cause);
+
+    # Call do_syscall with args from ecall
+    unsigned long ret = do_syscall(regs->a0, ..., regs->a7);
+    regs->a0 = ret;
+
+    // Bump user pc by 4, skip over ecall instruction
+    regs->pc += 4;
+}
+
+unsigned long do_syscall(
+    unsigned long a0,
+    ...,
+    unsigned long a7
+) {
+    if (a7 == 1)
+        sys_putchar(a0);
+    else if (a7 == 8)
+        sys_exit();
+    else
+        return -1;
+}
+
+unsigned long sys_putchar(char a) {
+    kputchar(a);
+    return 0;
+}
+
+[[noreturn]]
+unsigned long sys_exit(char a) {
+    ebreak();
+}
+
+[[noreturn]]
+void do_bad_exception(struct regs *regs, unsigned long cause) {
+    kputs("Exception 0x");
+    kputchar(hex_chars[cause]);
+    kputchar('\n');
+    ebreak();
+}
+
+[[noreturn]]
+void fatal() {
+    kputs("Fatal exception\n");
+    ebreak();
+}
+
+void kputs(const char *str) {
+    while (*str) {
+        u32 val = (u32)*str;
+        writel(0x10000000, val); // MMIO write
+        str ++;
+    }
+}
+
+void kputchar(char c) {
+    u32 val = (u32)c;
+    writel(0x10000000, val); // MMIO write
+}
+```
+
+And here's the user code, again in pseudo C:
+
+```
+[[noreturn]]
+void user_entry() {
+    puts(...);
+    exit();
+}
+
+void puts(const char *str) {
+    while (*str) {
+        putchar(*str);
+        str ++;
+    }
+}
+
+void putchar(char c) {
+    ecall(a0 = c, a7 = 1);
+}
+
+void exit() {
+    ecall(a7 = 2);
+}
+```
+
 # Lies and omissions
 
-# What's next?
+As long as this tutorial is, some simplifications have been made. Here are some
+of the most egregious lies and omissions, compared to the "real" RISC-V
+architecture and "real" RISC-V assembly code found in the world:
+
+- The assembly syntax resembles the syntax used by LLVM assembler and GNU
+  Binutils for RISC-V. However, it is not identical.
+- There are a lot more pseudoinstructions and CSRs than what I have described.
+- The `li` pseudoinstruction should support a wider range of constants.
+- `mstatus` is a lot more complicated than what I have described.
+- `%hi`, `%lo`, `%pcrel_hi`, `%pcrel_lo` are more complicated than what I have
+  described.
+
+There are also very important topics that are common or even ubiquitous in the
+RISC-V world, but I chose not to cover:
+
+- 64-bit architecture
+- Compressed instructions
+- Other privileged architecture and operating systems topics: Interrupts, memory
+  protection, virtual memory, ...
+
+However, what I've taught you should be more than enough to get you started into
+learning more on your own, or with further materials.
+
+# References
+
+Here are some references and tutorials I would personally recommend, if you're
+looking to get further into RISC-V low-level development
+
+- RISC-V Instruction Set Manual <https://github.com/riscv/riscv-isa-manual>
+- RISC-V Assembly Programmer's Manual <https://github.com/riscv-non-isa/riscv-asm-manual>
+- Operating System in 1,000 Lines <https://operating-system-in-1000-lines.vercel.app/en/>
+
+Other useful resources that I have used while writing this tutorial:
+
+- `arch/riscv/kernel/entry.S` from Linux <https://elixir.bootlin.com/linux/latest/source/arch/riscv/kernel/entry.S>
+
+# Thanks
+
+Thanks to my friends for various help with this tutorial:
+
+- Aria Desires <https://faultlore.com>
+- Riven Skaye <https://skaye.blog>
+- (TODO)
+
+And thanks to you for coming along with me on this journey. Come on over to
+<https://github.com/dramforever/easyriscv> if you have suggestions, grievances,
+or just want to share some thoughts.
 
 # Index
 
-::: {index_of=term}
+## Instructions
+
+::: {index_of=insn}
 :::
+
+## Registers and CSRs
 
 ::: {index_of=reg}
 :::
@@ -1810,11 +2689,15 @@ because the final `ebreak` instruction never actually completes.
 ::: {index_of=csr}
 :::
 
-::: {index_of=insn}
-:::
+## Special assembly syntax
 
 ::: {index_of=dir}
 :::
 
 ::: {index_of=rel}
+:::
+
+## Other terms
+
+::: {index_of=term}
 :::

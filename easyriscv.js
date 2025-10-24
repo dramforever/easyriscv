@@ -156,7 +156,7 @@ function convertEmulator(el) {
         const mstatusField = makeField(fmt(newState.mpp << 11), oldState !== null && newState.mpp !== oldState.mpp);
 
         const insn = mem.fetch(riscv.pc);
-        parts.push(`  pc       ${fmt(newState.pc)} (insn: ${insn === null ? '???' : fmt(insn)})\n`);
+        parts.push(`  pc       `, fieldFmt('pc'), ` (insn: ${insn === null ? '???' : fmt(insn)})\n`);
 
         for (let i = 0; i < 32; i ++) {
             const end = i % 2 ? '\n' : ' |';
@@ -195,7 +195,7 @@ function convertEmulator(el) {
             (new Uint8Array(mem.memory)).set(new Uint8Array(res.data));
             writeOutput('[ Started ]\n')
             riscv = new RiscvState(mem);
-            riscv.pc = 0x40000000;
+            riscv.pc = res.symbols.get('_start') ?? 0x40000000;
             riscv.regs[2 /* sp */] = 0x40000000 + mem.memory.byteLength;
             running = false;
             started = true;
@@ -281,8 +281,10 @@ function convertEmulator(el) {
             }
         }
 
-        renderRegs();
-        updateUI();
+        if (riscv) {
+            renderRegs();
+            updateUI();
+        }
 
         if (running) {
             runTask = setTimeout(run, 0);
