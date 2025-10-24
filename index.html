@@ -2082,8 +2082,8 @@ class="anchor-link" aria-hidden="true"></a>Handling User mode</h1>
 class="anchor-link" aria-hidden="true"></a>Entering User mode</h2>
 <p>Even though <code>mret</code> is named “return”, it is in fact the
 only way to lower the privilege level. We can use the behavior of
-<code>mret</code> to enter User mode. Here’s an example of a User mode
-program that does something bad:</p>
+<code>mret</code> to enter User mode. Here’s an example of entering User
+mode, with a User mode program that does something bad:</p>
 <div class="emulator-disabled">
     la t0, handler
     csrw mtvec, t0

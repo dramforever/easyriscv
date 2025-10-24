@@ -2060,7 +2060,7 @@ in the use of `mret`.
 
 Even though `mret` is named "return", it is in fact the only way to lower the
 privilege level. We can use the behavior of `mret` to enter User mode. Here's an
-example of a User mode program that does something bad:
+example of entering User mode, with a User mode program that does something bad:
 
 ```emulator
     la t0, handler
