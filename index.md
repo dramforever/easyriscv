@@ -49,8 +49,8 @@ RISC-V include:
   maintain your own.
 
 RISC-V is less mature than more established architectures like x86 or Arm, but
-it is already gaining steam real quick and has found great success in many areas
-of application, such as embedded systems, custom processors, education, and
+it is quickly gaining steam and has found great success in many areas of
+application, such as embedded systems, custom processors, education, and
 research.
 
 This article will cover the 32-bit bare bones RV32I_Zicsr instruction set with a
@@ -59,8 +59,8 @@ chip with such bare bones instruction support. Most of them will have more
 *extensions* for other features like floating point or compressed instructions.
 However, I would still consider what we have here a "complete" instruction set.
 For example, Rust has [Tier 2 support][rust-riscv32-none] for the target
-`riscv32i-unknown-none-elf` which actually works completely fine with
-only the instructions we'll cover here.
+`riscv32i-unknown-none-elf` which works completely fine with only the
+instructions we'll cover here.
 
 [rust-riscv32-none]: https://doc.rust-lang.org/nightly/rustc/platform-support/riscv32-unknown-none-elf.html
 
@@ -162,7 +162,8 @@ We'll talk in detail about all of `pc`, registers, instructions, labels, and the
 two checkboxes later.
 
 Now you may have also guessed that `addi x10, x0, 0x123` means `x10 = x0 +
-0x123`. As of `ebreak`, for now, just remember that `ebreak` stops the emulator.
+0x123`. As for `ebreak`, for now, just remember that `ebreak` stops the
+emulator.
 
 # Processor state
 
@@ -177,7 +178,7 @@ RV32I has 31 [general purpose registers]{x=term} numbered [`x1` through
 The register [`x0`]{x=reg} is a special "zero register". For computational
 instructions, you can use `x0` anywhere a register is expected. Reading it
 always gives zero, and writing to it just gets ignored. The use of a special
-register simplifies the design of the architecture, and this use is shared by
+register simplifies the design of the architecture, and this design is shared by
 MIPS and Arm AArch64. We will make good use of `x0` soon.
 
 (Note: In the emulator, the instruction listed in parenthesis next to `pc` in
@@ -269,8 +270,8 @@ subtractions:
 
 One thing you should note is that the immediate value has a limited range,
 namely `[-2048, 2047]`, the range of a 12-bit two's complement signed integer.
-This is because RV32I uses fixed 32-bit i.e. 4-byte instructions, and only the
-top 12 bits are available to encode an immediate value. You can see the
+This limitation is because RV32I uses fixed 32-bit i.e. 4-byte instructions, and
+only the top 12 bits are available to encode an immediate value. You can see the
 hexadecimal value encoded in the instruction from the 'Dump'. This article will
 not go into much further detail about instruction encodings.
 
@@ -298,8 +299,9 @@ copies the value from `rs1` to `rd`. It expands to `addi rd, rs1, 0`.
 mv rd, rs1
 ```
 
-Using the pseudoinstruction vs the "real" instruction are equivalent. You can
-see in the dump that the two are assembled exactly the same way.
+Using the pseudoinstruction is exactly equivalent to using the "real"
+instruction. You can see in the dump that the two are assembled exactly the same
+way.
 
 ```emulator
     addi x10, x0, 0x123
@@ -311,8 +313,7 @@ see in the dump that the two are assembled exactly the same way.
     ebreak
 ```
 
-Subtracting from zero is negation. What's negative of `0x123`?
-
+Subtracting from zero is negation. What's the negative of `0x123`?
 
 ```emulator
     li x10, 0x123
@@ -322,11 +323,11 @@ Subtracting from zero is negation. What's negative of `0x123`?
 ```
 
 Hmm, we get `0xfffffccd`. That's the 32-bit [two's complement]{x=term}
-representation of `-291` or `-0x123`. There's plenty of tutorials on this out
+representation of `-291`, or `-0x123`. There's plenty of tutorials on this out
 there, so we'll just note that whenever something is "signed", RISC-V uses two's
-complement representation. The benefit of this is that there's less instructions
-for separate signed and unsigned instructions --- both signed and unsigned
-numbers have the same overflow wrap-around behavior.
+complement representation. The benefit of this is that there are fewer
+instructions for separate signed and unsigned instructions --- both signed and
+unsigned numbers have the same overflow wrap-around behavior.
 
 Speaking of overflow wrap-around, what happens if we add something too much and
 it overflows? We'll use `add` to repeatedly double `0x123` and see what happens:
@@ -362,15 +363,15 @@ it overflows? We'll use `add` to repeatedly double `0x123` and see what happens:
 ```
 
 As `0x123` crawls up to the upper bits and eventually we get to `0x9180_0000`,
-in the next iteration it turns into `0x2300_0000`. There was an overflow! Double
-of `0x9180_0000` is `0x1_2300_0000`, but that needs 33 bits in binary, so the
-highest bit can't be put in the result. Since RISC-V doesn't have flag bits for
-carry or overflow, it's simply gone. The programmer is expected to deal with
-this.
+in the next iteration it turns into `0x2300_0000`. There was an overflow!
+Doubling of `0x9180_0000` gives `0x1_2300_0000`, but that needs 33 bits in
+binary, so the highest bit can't be put in the result. Since RISC-V doesn't have
+flag bits for carry or overflow, it's simply gone. The programmer is expected to
+deal with this.
 
 ## Bitwise instructions
 
-While we're talking about bits, another thing we can do about bits is doing
+While we're talking about bits, another thing we can do with bits is performing
 bitwise logical operations on them.
 
 The [`and`]{x=insn} instruction performs a bitwise-"and" between the bits of
@@ -454,7 +455,7 @@ though: adding one less works exactly right: `(a + 15) & -16`
 
 Usually when you write a comparison of some sort like `a == b` or `a >= b`, it's
 used as a condition for some `if` or loop, but... those things are complicated!
-We're getting to it later.
+We'll get to it later.
 
 Sometimes you just want a boolean value out of a comparison. The C convention
 uses 1 for true and 0 for false, and since the world runs on C now, that's what
@@ -643,7 +644,7 @@ the introduction, RV32I is the barest bones of the barest bones we've got.
 Forcing everyone to make their processors with multiplication and division even
 for tasks that don't need them would waste silicon area and money on every chip.
 Instead those making RISC-V processors have great freedom to choose, and indeed
-some would say, they have too much freedom.
+some would say they have too much freedom.
 
 For us... Honestly, I'm just glad we've been dealt a hand that we can tackle
 completely in full. There's no way I'm finishing writing this tutorial if RV32I
@@ -829,9 +830,9 @@ instead of the branch instructions for an unconditional jump.
 
 ```emulator
 loop:
-    # Yes this is an infinite loop. You can
-    # see that we execute this one
-    # instruction over and over
+    # Yes this is an infinite loop.
+    # You can see that we execute
+    # this one instruction over and over
     jal x0, loop
 ```
 
@@ -842,16 +843,16 @@ For convenience, a pseudoinstruction is available for you: [`j`]{x=insn}
 j label
 ```
 
-As of why you would want to do this... Well, we only have 32 bits per
+As for why you would want to do this... Well, we only have 32 bits per
 instruction, and since the `jal` instruction only needs one register number
 instead of the branch instructions' two, and it doesn't need a condition, the
 instruction encoding permits jumping over a longer range. So this is always
 preferred over something like `beq x0, x0, label` for a jump.
 
-As of `jalr`, you can jump to an address that's stored in a register. In C, that
-would be dealing with function pointers. You'd need this any time where a
-dynamic dispatch is needed. For example, we load the address of `foo` into a
-register first before jumping to it.
+As for `jalr`, you can jump to an address that's stored in a register. In C,
+that would be dealing with function pointers. You'd need this any time dynamic
+dispatch is needed. For example, we load the address of `foo` into a register
+first before jumping to it.
 
 ```emulator
     lui x10, %hi(foo)
@@ -1089,7 +1090,7 @@ multiple-word-sized. There are also stuff smaller than word-sized.
 An obvious one is the [byte]{x=term}, which is, well, 1-byte/8-bit and written
 `[u]int8_t` in C. In the middle is the [halfword]{x=term}, which is
 2-byte/16-bit and written `[u]int16_t` in C. You can use the directives
-[`.byte`]{x=dir} and [`.half`]{x=dir} for those respectively.
+[`.byte`]{x=dir} and [`.half`]{x=dir} respectively for those data types.
 
 ```
 .byte value [ , value [ , ...  ] ]
@@ -1171,7 +1172,7 @@ Correspondingly, the [`sb`]{x=insn} ("store byte") and [`sh`]{x=insn} ("store
 half") do the opposite of `lb` and `lh`, storing bytes and halfwords to memory.
 Instead of widening small values to register size, these take the lowest order
 bits from `rs1` and stores it to memory. (There's no `sbu` and `shu` because
-stores are narrowing, not widening operations.)
+stores are narrowing instead of widening operations.)
 
 ```
 sb rs2, imm(rs1)
@@ -1218,7 +1219,7 @@ test:
 ```
 
 Now you can try translating some basic C code into RISC-V assembly. Functions
-are... still out of the questions for now. Variables have to be either global or
+are... still out of the question for now. Variables have to be either global or
 put in registers. What else are we missing...
 
 ## Memory-mapped I/O
@@ -1253,8 +1254,8 @@ words, a `sw` to that address writes a byte of output.
     ebreak
 ```
 
-Eh, close enough to a greeting the entire world. We could refactor it a bit to
-use a loop, or whatever... Now that we think about it, how about going one step
+Eh, close enough to greeting the entire world. We could refactor it a bit to use
+a loop, or whatever... Now that we think about it, how about going one step
 further and organize our code into some functions?
 
 # Functions
@@ -1288,7 +1289,8 @@ These [register aliases]{x=term} are named after their uses:
 - (The use of [`tp`]{x=regalias} and [`gp`]{x=regalias} is out of the scope of
   this document.)
 
-(Yeah it's... all placed in a weird order... don't mind...)
+(Yeah it's... all placed in a weird order. The reason is out of the scope of
+this tutorial.)
 
 When you call a function, you put up to eight arguments in the... well, argument
 registers, in the order `a0`, `a1`, ..., `a7`. After that you use `jal` or
@@ -1388,8 +1390,8 @@ problems:
   anymore.
 - We still don't know how "saving" registers work.
 
-Clearly, both would require using the memory somehow. We can feed two birds with
-one scone by using memory in a structured way: The [stack]{x=term}.
+Clearly, both would require using memory somehow. We can feed two birds with one
+scone by using memory in a structured way: The [stack]{x=term}.
 
 Unlike some other architectures, the `sp` register is not really special in any
 way. But just like how we can designate how `a0` is used, we can have some
@@ -1592,10 +1594,10 @@ Yeah I don't really like this syntax either, but it is what we've got.
 Remember that oddball instruction I mentioned way back, `auipc`?
 
 I don't know about your experience, but the first time I saw RISC-V disassembly,
-this is the one instruction that caught my eye. And this memory has stuck to me
-ever since. It's a rather common occurrence in real RISC-V programs, and somehow
-I've been hiding it from you this whole time. If you take a sneak peek at the
-next section's title, you'll see how far we've come without `auipc`.
+this is the one instruction that caught my eye. And this memory has stuck with
+me ever since. It's a rather common occurrence in real RISC-V programs, and
+somehow I've been hiding it from you this whole time. If you take a sneak peek
+at the next section's title, you'll see how far we've come without `auipc`.
 
 So what does it do?
 
@@ -1727,10 +1729,10 @@ We're going to write an *extremely* bare bones operating system.
 
 ## Privilege levels
 
-One of the tasks an operating system performs is to control what programs. On
-RISC-V, the most basics of this control is implemented using [privilege
-levels]{x=term}. RISC-V defines... let's just say, several privilege levels, but
-we're only going to use two here:
+One of the tasks an operating system performs is to control what programs can
+and cannot do. On RISC-V, the most basic of this control is implemented using
+[privilege levels]{x=term}. RISC-V defines... let's just say, several privilege
+levels, but we're only going to use two here:
 
 - "[Machine]{x=term}", number 3
 - "[User]{x=term}", number 0
@@ -1829,8 +1831,8 @@ While we're at it:
 
 (No standard RISC-V CSR is write-only, or has side effects on read.)
 
-As a convenience, the pseudoinstructions [`csrw`]{x=insn} ("CSR read") and
-[`csrr`]{x=insn} ("CSR write") are available. `csrw csr, rs1` expands to `csrrw
+As a convenience, the pseudoinstructions [`csrr`]{x=insn} ("CSR read") and
+[`csrw`]{x=insn} ("CSR write") are available. `csrw csr, rs1` expands to `csrrw
 x0, csr, rs1`. Meanwhile, `csrr rd, csr` expands specifically to `csrrs rd, csr,
 x0`, just so we can agree on an encoding.
 
@@ -1846,7 +1848,7 @@ Yes, we're finally getting into those.
 
 An example of CSRs is [counters]{x=term}. Two basic read-only counters are
 [`cycle`]{x=csr} and [`instret`]{x=csr}. These counters, well, *count* the
-number of "cycles" and "instructions retired". "Retried" is a technical term
+number of "cycles" and "instructions retired". "Retired" is a technical term
 basically meaning "successfully completed".
 
 Since a 32-bit counter will overflow quite fast, on RV32, the counters have
@@ -1938,7 +1940,7 @@ The same information is now also available in the CSRs, as follows:
 - [`mcause`]{x=csr} ("M-mode trap cause"): The kind of exception.
 - [`mepc`]{x=csr} ("M-mode exception pc"): The address of the instruction that
   caused the exception.
-- [`mtval`]{x=csr} ("M-mode trap value"): Extra information about the exception
+- [`mtval`]{x=csr} ("M-mode trap value"): Extra information about the exception.
 - [`mstatus`]{x=csr} ("M-mode status"): It is set to `0x00001800`. The two bits
   in the middle, `mstatus[12:11]` (In C syntax, `(mstatus >> 11) & 0x3`) is the
   `mstatus.MPP` ("M-mode previous privilege level") field, which contains 3,
@@ -2153,8 +2155,9 @@ register, unlike all the others, have no special functionality. It can hold any
 in Machine mode. User mode code cannot change the value of it.
 
 So for example, you can stash the operating system stack pointer in `mscratch`
-while executing in User mode. At the top of the handler, `csrrw sp, mscratch,
-sp` to swap from the user stack pointer to the operating system stack pointer.
+before switching to User mode, and it will stay in `mscratch` untouched in User
+mode. At the top of the handler, `csrrw sp, mscratch, sp` to swap from the user
+stack pointer to the operating system stack pointer.
 
 ```
 handler:
@@ -2194,14 +2197,14 @@ support these features:
 
 We design the exception handling as follows:
 
-- During most of the time in M-mode, `mscratch` is 0
+- During most of the time in M-mode, `mscratch` is 0.
 - While in U-mode, `mscratch` points to the operating system stack pointer
 - At trap handler, if `mscratch` is 0, the exception came from M-mode, which we
-  cannot handle, so report a fatal exception.
+  cannot handle, so we report a fatal exception.
 - If it did come from U-mode, allocate 128 bytes on the stack to save the U-mode
   registers, and call `trap_main`, which manipulates U-mode registers in memory
-- After `trap_main`, we restore from memory, deallocate it from the stack, and
-  go back to U-mode, as outlined in the previous section.
+- After `trap_main`, we restore registers from memory, deallocate the space from
+  the stack, and go back to U-mode, as outlined in the previous section.
 
 The structure to save registers in is fairly simple:
 
@@ -2215,8 +2218,8 @@ struct regs {
 };
 ```
 
-Basically you can think of it as an array where element 0 is pc, and 1 through
-31 is registers x1 through x31.
+Basically you can think of it as an array where element 0 is `pc`, and elements
+1 through 31 are registers x1 through x31.
 
 Inside `trap_main`, we check `mcause` to see if it's a system call. If it is, we
 dispatch based on `a7`. If it's not, we report an exception from U-mode.
