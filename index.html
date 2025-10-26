@@ -2083,15 +2083,20 @@ fault the correct course of action is to retry the faulting
 instruction.</p>
 <p>However, <code>mstatus</code> and <code>mepc</code> are also
 writable. This gives us more flexibility in the use of
-<code>mret</code>.</p>
+<code>mret</code>. As an analogy, the same <code>jr</code> instruction
+(really <code>jalr</code> instruction) can be used to return from a
+call, and also can be used to jump to any address. Similarly,
+<code>mret</code> not only lets us return from an exception, but also
+lets us jump to any address <em>and</em> switch to any privilege
+level.</p>
 <h1 id="handling-user-mode"><a href="#handling-user-mode"
 class="anchor-link" aria-hidden="true"></a>Handling User mode</h1>
 <h2 id="entering-user-mode"><a href="#entering-user-mode"
 class="anchor-link" aria-hidden="true"></a>Entering User mode</h2>
 <p>Even though <code>mret</code> is named “return”, it is in fact the
-only way to lower the privilege level. We can use the behavior of
-<code>mret</code> to enter User mode. Here’s an example of entering User
-mode, with a User mode program that does something bad:</p>
+only way to lower the privilege level to <em>enter</em> User mode.
+Here’s an example of entering User mode, with a User mode program that
+does something bad:</p>
 <div class="emulator-disabled">
     la t0, handler
     csrw mtvec, t0

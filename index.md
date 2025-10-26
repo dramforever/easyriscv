@@ -2054,15 +2054,18 @@ where for example, after handling a page fault the correct course of action is
 to retry the faulting instruction.
 
 However, `mstatus` and `mepc` are also writable. This gives us more flexibility
-in the use of `mret`.
+in the use of `mret`. As an analogy, the same `jr` instruction (really `jalr`
+instruction) can be used to return from a call, and also can be used to jump to
+any address. Similarly, `mret` not only lets us return from an exception, but
+also lets us jump to any address *and* switch to any privilege level.
 
 # Handling User mode
 
 ## Entering User mode
 
 Even though `mret` is named "return", it is in fact the only way to lower the
-privilege level. We can use the behavior of `mret` to enter User mode. Here's an
-example of entering User mode, with a User mode program that does something bad:
+privilege level to *enter* User mode. Here's an example of entering User mode,
+with a User mode program that does something bad:
 
 ```emulator
     la t0, handler
