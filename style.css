@@ -15,6 +15,10 @@ a {
     color: initial;
 }
 
+a.uri {
+    word-break: break-all;
+}
+
 span:target {
     text-decoration: underline dotted;
     background-color: #eee;
@@ -24,6 +28,7 @@ pre {
     background-color: #eee;
     padding: 0.5em;
     line-height: initial;
+    overflow-x: auto;
 }
 
 code {
