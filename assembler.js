@@ -971,6 +971,9 @@ const WORDS = (() => {
     words.set('csrrsi', process_instruction('rco', assemble_csr_i(0x00006073)));
     words.set('csrrci', process_instruction('rco', assemble_csr_i(0x00007073)));
 
+    // csrrw zero, cycle, zero
+    words.set('unimp', process_instruction('', assemble_nullary(0xc0001073)));
+
     words.set('csrw',  process_instruction('cr', (parsed, args) =>
         assemble_csr_r(0x00001073)(csr_pseudo(parsed), args)
     ));

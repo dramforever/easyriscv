@@ -2103,8 +2103,9 @@ stopping the emulator.
 Sometimes, a program may wish to intentionally cause an exception.
 There are several well-defined way to do that:
 
-- The instruction `csrrw zero, cycle, zero` is specifically an illegal
-  instruction. It causes an "Illegal instruction" exception.
+- The pseudoinstruction [`unimp`]{x=insn} has the same encoding as `csrrw zero,
+  cycle, zero`, and it is the canonical RV32I illegal instruction. It causes
+  causes an "Illegal instruction" exception.
 - The instruction [`ebreak`]{x=insn} causes a "Breakpoint" exception
 - The instruction [`ecall`]{x=insn} causes an "Environment call from User mode"
   exception when executed in User mode, and "Environment call from Machine mode"
@@ -2132,13 +2133,16 @@ handler:
 user_entry:
     ebreak
     # ecall
-    # csrrw zero, cycle, zero
+    # unimp
 ```
 
 As the names suggest, `ebreak` is used for debugging breakpoints. As a special
 case, in this emulator `ebreak` in Machine mode stops the emulator. You can
 think of it as the emulator being a debugger, and the debugger catching the
 breakpoint.
+
+`unimp` can be used to intentionally crash a program upon detection of some
+unrecoverable error.
 
 Meanwhile, `ecall` is used for things like system calls. "Environment call from
 User mode" is a distinct exception cause code to make it easy to check
@@ -2542,7 +2546,7 @@ exit:
     li a7, 2
     ecall
     # Not supposed to return, just to be safe
-    ebreak
+    unimp
 
 msg_hello:
     .byte 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21, 0x0a, 0x00

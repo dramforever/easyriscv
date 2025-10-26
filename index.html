@@ -2131,8 +2131,10 @@ aria-hidden="true"></a>Intentionally causing an exception</h2>
 <p>Sometimes, a program may wish to intentionally cause an exception.
 There are several well-defined way to do that:</p>
 <ul>
-<li>The instruction <code>csrrw zero, cycle, zero</code> is specifically
-an illegal instruction. It causes an “Illegal instruction”
+<li>The pseudoinstruction <span
+id="insn-unimp"><em><code>unimp</code></em></span> has the same encoding
+as <code>csrrw zero, cycle, zero</code>, and it is the canonical RV32I
+illegal instruction. It causes causes an “Illegal instruction”
 exception.</li>
 <li>The instruction <span
 id="insn-ebreak"><em><code>ebreak</code></em></span> causes a
@@ -2164,12 +2166,14 @@ handler:
 user_entry:
     ebreak
     # ecall
-    # csrrw zero, cycle, zero
+    # unimp
 </div>
 <p>As the names suggest, <code>ebreak</code> is used for debugging
 breakpoints. As a special case, in this emulator <code>ebreak</code> in
 Machine mode stops the emulator. You can think of it as the emulator
 being a debugger, and the debugger catching the breakpoint.</p>
+<p><code>unimp</code> can be used to intentionally crash a program upon
+detection of some unrecoverable error.</p>
 <p>Meanwhile, <code>ecall</code> is used for things like system calls.
 “Environment call from User mode” is a distinct exception cause code to
 make it easy to check specifically for this case.</p>
@@ -2567,7 +2571,7 @@ exit:
     li a7, 2
     ecall
     # Not supposed to return, just to be safe
-    ebreak
+    unimp
 
 msg_hello:
     .byte 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21, 0x0a, 0x00
@@ -2786,6 +2790,7 @@ aria-hidden="true"></a>Instructions</h2>
 <li><a href="#insn-srli"><code>srli</code></a></li>
 <li><a href="#insn-sub"><code>sub</code></a></li>
 <li><a href="#insn-sw"><code>sw</code></a></li>
+<li><a href="#insn-unimp"><code>unimp</code></a></li>
 <li><a href="#insn-xor"><code>xor</code></a></li>
 <li><a href="#insn-xori"><code>xori</code></a></li>
 </ul>
