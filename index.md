@@ -2684,6 +2684,7 @@ Thanks to my friends for various help with this tutorial:
 
 - Aria Desires <https://faultlore.com>
 - Riven Skaye <https://skaye.blog>
+- robotreader <https://sdubinsky.com>
 - (TODO)
 
 And thanks to you for coming along with me on this journey. Come on over to
