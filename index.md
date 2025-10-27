@@ -2015,7 +2015,7 @@ codes:
 instruction that is not 4-byte aligned. The exception happens on the jump or
 branch instruction, not the target.
 
-"Load access fault" and "Store/AMO access fault" happens when accessing a
+"Load access fault" and "Store/AMO access fault" happens when accessing an
 invalid memory address, or accessing a memory address in an invalid way.
 
 ("AMO" stands for "atomic memory operation", which we will not talk about and is
