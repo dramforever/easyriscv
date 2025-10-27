@@ -9,7 +9,7 @@ https://dramforever.github.io/easyriscv
 [Pandoc]: https://pandoc.org/
 
 ```
-pandoc --toc --template=template.html --lua-filter=filter.lua -o index.html index.md
+pandoc --toc --template=template.html --lua-filter=filter.lua --variable=date:"$(date --utc +"%F %R")" -o index.html index.md
 ```
 
 ## License
