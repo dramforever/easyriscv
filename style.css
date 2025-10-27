@@ -99,6 +99,11 @@ code {
     line-height: initial;
     white-space: pre-wrap;
     font-family: monospace, monospace;
+
+    width: 90vw;
+    left: calc(((min(750px, 90vw) - 90vw) / 2));
+    position: relative;
+
     display: grid;
     gap: 1em;
     grid-template-columns: 1fr auto;
