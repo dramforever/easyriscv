@@ -113,7 +113,7 @@ code {
     padding: 0.4em;
     resize: none;
     color: var(--fg-body);
-    background-color: var(--bg-alt);
+    background-color: var(--bg-body);
 }
 
 .emulator .emulator-controls {
