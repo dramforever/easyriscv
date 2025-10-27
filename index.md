@@ -2,6 +2,16 @@
 title: "Easy RISC-V"
 ---
 
+[(Emulators disabled version)](?no-emulator)
+
+:::{.narrow-screen-warning}
+
+This page is not designed to be used on a narrow screen or without CSS. If
+you're having issues using the emulator, try the [emulators disabled
+version](?no-emulator).
+
+:::
+
 An interactive introduction to RISC-V assembly programming, by
 [dramforever](https://github.com/dramforever).
 

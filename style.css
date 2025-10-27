@@ -1,7 +1,32 @@
+:root {
+    --fg-body: black;
+    --bg-body: white;
+    --bg-alt: #eee;
+
+    --fg-highlight: black;
+    --bg-highlight: #eee;
+
+    --bg-changed: antiquewhite;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --fg-body: white;
+        --bg-body: black;
+        --bg-alt: #222;
+
+        --bg-changed: #744;
+    }
+}
+
 .page-banner {
     font-size: 2em;
     font-weight: bold;
-    border-bottom: 2px solid black;
+    border-bottom: 2px solid var(--fg-body);
+}
+
+nav.table-of-contents {
+    border-bottom: 2px solid var(--fg-body);
 }
 
 body {
@@ -9,10 +34,25 @@ body {
     max-width: calc(min(750px, 90%));
     line-height: 1.3;
     padding-bottom: 15vh;
+
+    color: var(--fg-body);
+    background-color: var(--bg-body);
+}
+
+.narrow-screen-warning {
+    display: none;
+}
+
+@media (max-width: 700px) {
+    .narrow-screen-warning {
+        display: block;
+        border: 1px solid var(--fg-body);
+        padding: 0 2em;
+    }
 }
 
 a {
-    color: initial;
+    color: var(--fg-body);
 }
 
 a.uri {
@@ -21,11 +61,12 @@ a.uri {
 
 span:target {
     text-decoration: underline dotted;
-    background-color: #eee;
+    color: var(--fg-highlight);
+    background-color: var(--bg-highlight);
 }
 
 pre {
-    background-color: #eee;
+    background-color: var(--bg-alt);
     padding: 0.5em;
     line-height: initial;
     overflow-x: auto;
@@ -70,7 +111,9 @@ code {
     grid-row: 1;
     min-height: 40ex;
     padding: 0.4em;
-    resize: vertical;
+    resize: none;
+    color: var(--fg-body);
+    background-color: var(--bg-alt);
 }
 
 .emulator .emulator-controls {
@@ -108,20 +151,19 @@ code {
 .emulator .emulator-regs {
     grid-column: 2;
     grid-row: 1;
-    background-color: #eee;
+    background-color: var(--bg-alt);
     padding: 0.5em;
     min-height: 17lh;
 }
 
 .emulator .emulator-regs .field-changed {
-    /* TODO: Color */
-    background-color: antiquewhite;
+    background-color: var(--bg-changed);
 }
 
 .emulator .emulator-output {
     grid-column: 1 / 3;
     grid-row: 3;
-    background-color: #eee;
+    background-color: var(--bg-alt);
     overflow-y: auto;
     padding: 0.5em;
     word-break: break-all;
