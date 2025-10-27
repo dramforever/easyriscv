@@ -2690,12 +2690,12 @@ Other useful resources that I have used while writing this tutorial:
 
 # Thanks
 
-Thanks to my friends for various help with this tutorial:
+Thanks to these folks for UI design help and content suggestions:
 
 - Aria Desires <https://faultlore.com>
 - Riven Skaye <https://skaye.blog>
 - robotreader <https://sdubinsky.com>
-- (TODO)
+- Bruce Hoult <http://hoult.org/bruce>
 
 And thanks to you for coming along with me on this journey. Come on over to
 <https://github.com/dramforever/easyriscv> if you have suggestions, grievances,
