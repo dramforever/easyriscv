@@ -43,7 +43,7 @@ body {
     display: none;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 800px) {
     .narrow-screen-warning {
         display: block;
         border: 1px solid var(--fg-body);
