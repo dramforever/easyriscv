@@ -2701,6 +2701,13 @@ And thanks to you for coming along with me on this journey. Come on over to
 <https://github.com/dramforever/easyriscv> if you have suggestions, grievances,
 or just want to share some thoughts.
 
+# License
+
+This tutorial is under the [CC0] license. To the maximum extent permitted by
+law, this tutorial is dedicated to the public domain.
+
+[CC0]: https://creativecommons.org/publicdomain/zero/1.0/
+
 # Index
 
 ## Instructions
