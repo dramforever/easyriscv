@@ -1618,7 +1618,7 @@ instruction. So this code:
 
 ```
 start:
-    auipc a0, 3
+    lui a0, 3
     addi a0, a0, 4
 ```
 
