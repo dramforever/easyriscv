@@ -704,7 +704,7 @@ to fill in the lower bits. For example, if we want `0x12345`:
 ```
 
 For convenience, in assembly you can use [`%hi()`]{x=rel} and [`%lo()`]{x=rel}
-to extract the, well, high 20 and low 10 bits of a value. The previous example
+to extract the, well, high 20 and low 12 bits of a value. The previous example
 could also be written:
 
 ```emulator
