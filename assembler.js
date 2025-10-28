@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: CC0-1.0 OR 0BSD
+
 const REGEX_OPERATOR = /[#&()*+,/^|~:]/;
 const REGEX_TOKENIZE = /\s+|(?=[#&()*+,/^|~:])|(?<=[#&()*+,/^|~:])/;
 const REGS = (() => {

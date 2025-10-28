@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: CC0-1.0 OR 0BSD
+
 import { RiscvState, RiscvMemory } from './emulator.js';
 import { assemble_riscv } from './assembler.js';
 

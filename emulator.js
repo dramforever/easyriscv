@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: CC0-1.0 OR 0BSD
+
 export class RiscvMemory {
     constructor(size) {
         this.memory = new ArrayBuffer(size);
