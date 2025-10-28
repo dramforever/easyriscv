@@ -2696,6 +2696,8 @@ Thanks to these folks for UI design help and content suggestions:
 - Riven Skaye <https://skaye.blog>
 - robotreader <https://sdubinsky.com>
 - Bruce Hoult <http://hoult.org/bruce>
+- soxfox <https://soxfox.me>
+- cbm-vic-20 on [Hacker News](https://news.ycombinator.com/item?id=45727405)
 
 And thanks to you for coming along with me on this journey. Come on over to
 <https://github.com/dramforever/easyriscv> if you have suggestions, grievances,
