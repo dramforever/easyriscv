@@ -170,6 +170,8 @@ export class RiscvState {
             return this.cycle[0];
         } else if (num == 0xc02) {
             return this.instret[0];
+        } else {
+            return null;
         }
     }
 
