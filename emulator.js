@@ -145,9 +145,13 @@ export class RiscvState {
     }
 
     read_csr(num) {
-        if (num == 0xc80) {
+        if (num == 0xc00) {         // cycle
+            return this.cycle[0];
+        } else if (num == 0xc02) {  // instret
+            return this.instret[0];
+        } else if (num == 0xc80) {  // cycleh
             return this.cycle[1];
-        } else if (num == 0xc82) {
+        } else if (num == 0xc82) {  // instreth
             return this.instret[1];
         }
 
@@ -156,20 +160,16 @@ export class RiscvState {
 
         if (num === 0x300) { // mstatus
             return (this.mpp << 11) >>> 0;
-        } else if (num === 0x340) { // mscratch
+        } else if (num === 0x340) {
             return this.mscratch;
-        } else if (num === 0x341) { // mepc
+        } else if (num === 0x341) {
             return this.mepc;
-        } else if (num === 0x342) { // mcause
+        } else if (num === 0x342) {
             return this.mcause;
-        } else if (num === 0x343) { // mtval
+        } else if (num === 0x343) {
             return this.mtval;
         } else if (num === 0x305) {
             return this.mtvec;
-        } else if (num == 0xc00) {
-            return this.cycle[0];
-        } else if (num == 0xc02) {
-            return this.instret[0];
         } else {
             return null;
         }
