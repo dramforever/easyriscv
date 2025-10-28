@@ -325,7 +325,7 @@ Subtracting from zero is negation. What's the negative of `0x123`?
     ebreak
 ```
 
-Hmm, we get `0xfffffccd`. That's the 32-bit [two's complement]{x=term}
+Hmm, we get `0xfffffedd`. That's the 32-bit [two's complement]{x=term}
 representation of `-291`, or `-0x123`. There's plenty of tutorials on this out
 there, so we'll just note that whenever something is "signed", RISC-V uses two's
 complement representation. The benefit of this is that there are fewer
