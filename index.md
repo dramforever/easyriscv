@@ -488,9 +488,20 @@ slti rd, rs1, imm
 sltiu rd, rs1, imm
 ```
 
-(Of particular note is `sltiu`, where the immediate operand still has the range
-`[-2048, 2047]` but is sign extended to 32 bits and then treated as an unsigned
-value, like what would happen in C with `a < (unsigned)-1`.)
+(Obscure side note, for completeness: for `sltiu`, the immediate operand still
+has the range `[-2048, 2047]` but it performs an *unsigned* comparison between
+`rs1` and (the two's complement of) the immediate value. This allows for some
+counterintuitive but convenient use cases. For example, interpreting `rs1` as a
+signed value:
+
+```
+                    # C pseudocode:
+sltiu rd, rs1, 42   #   rd = (rs1 >= 0) && (rs1 < 42)
+sltiu rd, rs1, -1   #   rd = (rs1 != -1)
+```
+
+You don't need to fully understand this now. Even GCC as of October of 2025
+fails to perform the second optimization.)
 
 That's... one of the six comparisons settled. What about the others? As it turns
 out, we can synthesize any of the other five, using up to two instructions.

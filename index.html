@@ -13,7 +13,7 @@
 
     <header class="page-banner">Easy RISC-V</header>
 
-    <p>(Last updated: 2025-10-28 08:04)</p>
+    <p>(Last updated: 2025-10-29 16:32)</p>
 
     <nav class="table-of-contents">
         <ul>
@@ -558,10 +558,17 @@ second operand is an immediate value.</p>
 sltu rd, rs1, rs2
 slti rd, rs1, imm
 sltiu rd, rs1, imm</code></pre>
-<p>(Of particular note is <code>sltiu</code>, where the immediate
-operand still has the range <code>[-2048, 2047]</code> but is sign
-extended to 32 bits and then treated as an unsigned value, like what
-would happen in C with <code>a &lt; (unsigned)-1</code>.)</p>
+<p>(Obscure side note, for completeness: for <code>sltiu</code>, the
+immediate operand still has the range <code>[-2048, 2047]</code> but it
+performs an <em>unsigned</em> comparison between <code>rs1</code> and
+(the two’s complement of) the immediate value. This allows for some
+counterintuitive but convenient use cases. For example, interpreting
+<code>rs1</code> as a signed value:</p>
+<pre><code>                    # C pseudocode:
+sltiu rd, rs1, 42   #   rd = (rs1 &gt;= 0) &amp;&amp; (rs1 &lt; 42)
+sltiu rd, rs1, -1   #   rd = (rs1 != -1)</code></pre>
+<p>You don’t need to fully understand this now. Even GCC as of October
+of 2025 fails to perform the second optimization.)</p>
 <p>That’s… one of the six comparisons settled. What about the others? As
 it turns out, we can synthesize any of the other five, using up to two
 instructions.</p>
