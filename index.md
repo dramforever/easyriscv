@@ -534,6 +534,8 @@ first. We will use the fact that for unsigned values, `a != 0` is equivalent to
 
     sltu x11, x0, x10   # 0 <u x10  i.e.  x10 != 0
     sltiu x12, x10, 1   # x10 <u 1  i.e.  x10 == 0
+
+    ebreak
 ```
 
 As a bonus, this is also how we get logical not and converting integer to
@@ -1228,6 +1230,8 @@ This emulator supports misaligned memory accesses.
     lw x11, 0(x10)
     lw x12, 1(x10)
     lw x13, 3(x10)
+
+    ebreak
 
 test:
     .byte 1, 2, 3, 4, 5, 6, 7, 8
