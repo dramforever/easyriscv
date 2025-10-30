@@ -755,8 +755,8 @@ somewhere." The conditions are:
 - [`bne`]{x=insn}: `rs1 != rs2` ("not equal")
 - [`blt`]{x=insn}: `rs1 < rs2` signed ("less than")
 - [`bge`]{x=insn}: `rs1 >= rs2` signed ("greater or equal")
-- [`bltu`]{x=insn}: `rs1 < rs2` signed ("less than unsigned")
-- [`bgeu`]{x=insn}: `rs1 >= rs2` signed ("greater or equal unsigned")
+- [`bltu`]{x=insn}: `rs1 < rs2` unsigned ("less than unsigned")
+- [`bgeu`]{x=insn}: `rs1 >= rs2` unsigned ("greater or equal unsigned")
 
 (In case you're wondering about the confusing choice of ordering operators here,
 it's just that the negation of `<` is `>=`.)
