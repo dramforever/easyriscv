@@ -668,8 +668,8 @@ shift, and <span id="insn-slli"><em><code>slli</code></em></span> is
 left shift with immediate.</p>
 <pre><code>sll rd, rs1, rs2
 slli rd, rs1, imm</code></pre>
-<p>Aha, now we can blow up <code>0x123</code> without repeating myself
-so much:</p>
+<p>Aha, now we can blow up <code>0x123</code> without repeating
+ourselves so much:</p>
 <div class="emulator-disabled">
     li x10, 0x123
     slli x10, x10, 10
@@ -1322,11 +1322,11 @@ going one step further and organize our code into some functions?</p>
 aria-hidden="true"></a>Functions</h1>
 <p>We already know how to call a function and return back. Namely,
 <code>jal</code> calls a function, and <code>ret</code> returns. Usually
-functions take arguments, uses local variables, and returns results.
-Since there’s no real difference between the 31 general purpose
-registers, on account of them being, well, general purpose, we could
-just use any of them as we wish. Usually though, there are some standard
-conventions to follow</p>
+functions take arguments, use local variables, and return results. Since
+there’s no real difference between the 31 general purpose registers, on
+account of them being, well, general purpose, we could just use any of
+them as we wish. Usually though, there are some standard conventions to
+follow</p>
 <h2 id="register-aliases-and-calling-conventions"><a
 href="#register-aliases-and-calling-conventions" class="anchor-link"
 aria-hidden="true"></a>Register aliases and calling conventions</h2>
@@ -2230,8 +2230,8 @@ class="anchor-link" aria-hidden="true"></a>Writing a very very bare
 bones operating system</h1>
 <h2 id="design"><a href="#design" class="anchor-link"
 aria-hidden="true"></a>Design</h2>
-<p>We have enough of to write a very very bare bones operating system.
-It will support these features:</p>
+<p>We have enough to write a very very bare bones operating system. It
+will support these features:</p>
 <ul>
 <li>System calls:
 <ul>
