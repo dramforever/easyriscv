@@ -611,7 +611,7 @@ sll rd, rs1, rs2
 slli rd, rs1, imm
 ```
 
-Aha, now we can blow up `0x123` without repeating myself so much:
+Aha, now we can blow up `0x123` without repeating ourselves so much:
 
 ```emulator
     li x10, 0x123
@@ -1280,8 +1280,8 @@ further and organize our code into some functions?
 # Functions
 
 We already know how to call a function and return back. Namely, `jal` calls a
-function, and `ret` returns. Usually functions take arguments, uses local
-variables, and returns results. Since there's no real difference between the 31
+function, and `ret` returns. Usually functions take arguments, use local
+variables, and return results. Since there's no real difference between the 31
 general purpose registers, on account of them being, well, general purpose, we
 could just use any of them as we wish. Usually though, there are some standard
 conventions to follow
@@ -2213,8 +2213,8 @@ We'll see the full code for this in the following section.
 
 ## Design
 
-We have enough of to write a very very bare bones operating system. It will
-support these features:
+We have enough to write a very very bare bones operating system. It will support
+these features:
 
 - System calls:
   - `a7 = 1`: putchar, `a0` is the byte to write
