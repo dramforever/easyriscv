@@ -13,7 +13,7 @@
 
     <header class="page-banner">Easy RISC-V</header>
 
-    <p>(Last updated: 2025-10-30 17:57)</p>
+    <p>(Last updated: 2025-10-30 22:11)</p>
 
     <nav class="table-of-contents">
         <ul>
@@ -600,6 +600,8 @@ which is the same as <code>a &lt; 1</code>.</p>
 
     sltu x11, x0, x10   # 0 &lt;u x10  i.e.  x10 != 0
     sltiu x12, x10, 1   # x10 &lt;u 1  i.e.  x10 == 0
+
+    ebreak
 </div>
 <p>As a bonus, this is also how we get logical not and converting
 integer to boolean.</p>
@@ -1275,6 +1277,8 @@ on microcontrollers and such, it might not work at all.</p>
     lw x11, 0(x10)
     lw x12, 1(x10)
     lw x13, 3(x10)
+
+    ebreak
 
 test:
     .byte 1, 2, 3, 4, 5, 6, 7, 8
