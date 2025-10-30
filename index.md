@@ -998,7 +998,7 @@ foo:
 ```
 
 The [`sw`]{x=insn} ("store word") instruction stores `rs2` to a word in memory
-at address `rs2 + imm`, in other words it writes the word to memory:
+at address `rs1 + imm`, in other words it writes the word to memory:
 
 ```
 sw rs2, imm(rs1)

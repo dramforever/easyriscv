@@ -13,7 +13,7 @@
 
     <header class="page-banner">Easy RISC-V</header>
 
-    <p>(Last updated: 2025-10-29 16:32)</p>
+    <p>(Last updated: 2025-10-30 17:57)</p>
 
     <nav class="table-of-contents">
         <ul>
@@ -1071,7 +1071,7 @@ foo:
 </div>
 <p>The <span id="insn-sw"><em><code>sw</code></em></span> (“store word”)
 instruction stores <code>rs2</code> to a word in memory at address
-<code>rs2 + imm</code>, in other words it writes the word to memory:</p>
+<code>rs1 + imm</code>, in other words it writes the word to memory:</p>
 <pre><code>sw rs2, imm(rs1)</code></pre>
 <div class="emulator-disabled">
     lui x10, %hi(foo)
