@@ -13,7 +13,7 @@
 
     <header class="page-banner">Easy RISC-V</header>
 
-    <p>(Last updated: 2025-10-31 13:49)</p>
+    <p>(Last updated: 2025-11-02 14:19)</p>
 
     <nav class="table-of-contents">
         <ul>
@@ -2233,13 +2233,15 @@ aria-hidden="true"></a>Design</h2>
 <p>We have enough to write a very very bare bones operating system. It
 will support these features:</p>
 <ul>
-<li>System calls:
+<li>System calls: On <code>ecall</code>, the OS will do something
+depending on the register values:
 <ul>
-<li><code>a7 = 1</code>: putchar, <code>a0</code> is the byte to
-write</li>
-<li><code>a7 = 2</code>: exit</li>
+<li><code>a7 = 1</code>: putchar: <code>a0</code> is the byte to write,
+and afterwards return to instruction after <code>ecall</code></li>
+<li><code>a7 = 2</code>: exit: Stop the emulator</li>
 </ul></li>
-<li>Exception handling: Print error message and exit</li>
+<li>Exception handling: Print error message and exit on any other
+exception</li>
 </ul>
 <p>We design the exception handling as follows:</p>
 <ul>

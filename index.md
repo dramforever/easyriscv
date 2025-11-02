@@ -2216,10 +2216,12 @@ We'll see the full code for this in the following section.
 We have enough to write a very very bare bones operating system. It will support
 these features:
 
-- System calls:
-  - `a7 = 1`: putchar, `a0` is the byte to write
-  - `a7 = 2`: exit
-- Exception handling: Print error message and exit
+- System calls: On `ecall`, the OS will do something depending on the register
+  values:
+  - `a7 = 1`: putchar: `a0` is the byte to write, and afterwards return to
+    instruction after `ecall`
+  - `a7 = 2`: exit: Stop the emulator
+- Exception handling: Print error message and exit on any other exception
 
 We design the exception handling as follows:
 
