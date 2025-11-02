@@ -440,7 +440,8 @@ bitwise-"not".
 Another interesting operation you can do is to round/[align]{x=term} something
 up or down to a multiple of a power of two. For example, if you want to find the
 closest multiple of 16 below `a`, in binary that would be clearing the lowest 4
-bits, or `a & ~0b1111`. Conveniently, that's `a & -16` in two's complement.
+bits, or `a & ~0b1111`. Conveniently, that's `a & -16` in two's complement
+representation.
 
 Aligning up is less intuitive, but one idea would be adding 16 first. However
 that gives an incorrect result for multiples of 16. It's easy enough to fix
@@ -490,9 +491,9 @@ sltiu rd, rs1, imm
 
 (Obscure side note, for completeness: for `sltiu`, the immediate operand still
 has the range `[-2048, 2047]` but it performs an *unsigned* comparison between
-`rs1` and (the two's complement of) the immediate value. This allows for some
-counterintuitive but convenient use cases. For example, interpreting `rs1` as a
-signed value:
+`rs1` and (the two's complement representation of) the immediate value. This
+allows for some counterintuitive but convenient use cases. For example,
+interpreting `rs1` as a signed value:
 
 ```
                     # C pseudocode:
@@ -671,7 +672,7 @@ wasn't so bare boned.
 
 (Operand `a` is `rs1`, and `b` is `rs2` or immediate. In the instruction name
 `[i]` means an immediate variant is available. Subscript `u` means unsigned and
-`s` means two's complement signed.)
+`s` means signed in two's complement representation.)
 
 | Instruction | Operation | Immediate range |
 |---|----|---|
