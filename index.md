@@ -1189,7 +1189,7 @@ test:
 Correspondingly, the [`sb`]{x=insn} ("store byte") and [`sh`]{x=insn} ("store
 half") do the opposite of `lb` and `lh`, storing bytes and halfwords to memory.
 Instead of widening small values to register size, these take the lowest order
-bits from `rs1` and stores it to memory. (There's no `sbu` and `shu` because
+bits from `rs2` and stores it to memory. (There's no `sbu` and `shu` because
 stores are narrowing instead of widening operations.)
 
 ```

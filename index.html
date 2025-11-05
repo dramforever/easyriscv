@@ -13,7 +13,7 @@
 
     <header class="page-banner">Easy RISC-V</header>
 
-    <p>(Last updated: 2025-11-02 14:22)</p>
+    <p>(Last updated: 2025-11-05 05:59)</p>
 
     <nav class="table-of-contents">
         <ul>
@@ -1242,7 +1242,7 @@ id="insn-sb"><em><code>sb</code></em></span> (“store byte”) and <span
 id="insn-sh"><em><code>sh</code></em></span> (“store half”) do the
 opposite of <code>lb</code> and <code>lh</code>, storing bytes and
 halfwords to memory. Instead of widening small values to register size,
-these take the lowest order bits from <code>rs1</code> and stores it to
+these take the lowest order bits from <code>rs2</code> and stores it to
 memory. (There’s no <code>sbu</code> and <code>shu</code> because stores
 are narrowing instead of widening operations.)</p>
 <pre><code>sb rs2, imm(rs1)
