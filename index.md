@@ -2083,7 +2083,7 @@ also lets us jump to any address *and* switch to any privilege level.
 
 ## Entering User mode
 
-Even though `mret` is named "return", it is in fact the only way to lower the
+In fact, even though `mret` is named "return", it is the only way to lower the
 privilege level to *enter* User mode. Here's an example of entering User mode,
 with a User mode program that does something bad:
 
@@ -2230,8 +2230,10 @@ We design the exception handling as follows:
 - While in U-mode, `mscratch` points to the operating system stack pointer
 - At trap handler, if `mscratch` is 0, the exception came from M-mode, which we
   cannot handle, so we report a fatal exception.
-- If it did come from U-mode, allocate 128 bytes on the stack to save the U-mode
-  registers, and call `trap_main`, which manipulates U-mode registers in memory
+- If it did come from U-mode, allocate 128 bytes on the stack and save the
+  U-mode registers there, and call `trap_main`, which handles the exception, and
+  may manipulate the saved registers, which will be reflected in U-mode state
+  after we return.
 - After `trap_main`, we restore registers from memory, deallocate the space from
   the stack, and go back to U-mode, as outlined in the previous section.
 

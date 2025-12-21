@@ -2106,7 +2106,7 @@ level.</p>
 class="anchor-link" aria-hidden="true"></a>Handling User mode</h1>
 <h2 id="entering-user-mode"><a href="#entering-user-mode"
 class="anchor-link" aria-hidden="true"></a>Entering User mode</h2>
-<p>Even though <code>mret</code> is named “return”, it is in fact the
+<p>In fact, even though <code>mret</code> is named “return”, it is the
 only way to lower the privilege level to <em>enter</em> User mode.
 Here’s an example of entering User mode, with a User mode program that
 does something bad:</p>
@@ -2251,9 +2251,10 @@ system stack pointer</li>
 <li>At trap handler, if <code>mscratch</code> is 0, the exception came
 from M-mode, which we cannot handle, so we report a fatal
 exception.</li>
-<li>If it did come from U-mode, allocate 128 bytes on the stack to save
-the U-mode registers, and call <code>trap_main</code>, which manipulates
-U-mode registers in memory</li>
+<li>If it did come from U-mode, allocate 128 bytes on the stack and save
+the U-mode registers there, and call <code>trap_main</code>, which
+handles the exception, and may manipulate the saved registers, which
+will be reflected in U-mode state after we return.</li>
 <li>After <code>trap_main</code>, we restore registers from memory,
 deallocate the space from the stack, and go back to U-mode, as outlined
 in the previous section.</li>
