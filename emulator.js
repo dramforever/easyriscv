@@ -409,7 +409,7 @@ export class RiscvState {
                 if (this.priv === 3) {
                     return { type: 'stop' };
                 } else {
-                    return this.exception(CAUSE_CODE.breakpoint, this.pc);
+                    return this.exception(CAUSE_CODE.breakpoint, 0);
                 }
             } else {
                 return this.exception(CAUSE_CODE.illegal_instruction, insn);
