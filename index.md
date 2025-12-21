@@ -2042,8 +2042,8 @@ invalid memory address, or accessing a memory address in an invalid way.
 not featured in the emulator.)
 
 "Illegal instruction" happens not only in the self explanatory way when an
-invalid instruction is executed, but also when accessing a CSR in an invalid
-way, or from too low a privilege level.
+invalid instruction is executed, but also happens when accessing a CSR in an
+invalid way, or from too low a privilege level.
 
 "Breakpoint", "Environment call from User mode" and "Environment call from
 Machine mode" will be explained in a future section.
