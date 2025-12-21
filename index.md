@@ -2125,7 +2125,7 @@ There are several well-defined way to do that:
 
 - The pseudoinstruction [`unimp`]{x=insn} has the same encoding as `csrrw zero,
   cycle, zero`, and it is the canonical RV32I illegal instruction. It causes
-  causes an "Illegal instruction" exception.
+  an "Illegal instruction" exception.
 - The instruction [`ebreak`]{x=insn} causes a "Breakpoint" exception
 - The instruction [`ecall`]{x=insn} causes an "Environment call from User mode"
   exception when executed in User mode, and "Environment call from Machine mode"
