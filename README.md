@@ -20,3 +20,7 @@ The associated code in this repository is provided under, of your choosing, eith
 
 [CC0]: https://creativecommons.org/publicdomain/zero/1.0/
 [0bsd]: https://opensource.org/license/0bsd
+
+## Page move
+
+This site was previously at <https://dramforever.github.io/easyriscv/>. In February of 2026, I have moved it to a domain under my control.
