@@ -1,6 +1,6 @@
 # Easy RISC-V
 
-https://dramforever.github.io/easyriscv
+https://easyriscv.dram.page
 
 ## Build
 
