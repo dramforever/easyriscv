@@ -108,7 +108,11 @@ function convertEmulator(el) {
     counter ++;
     printOnExc.append(printOnExcCheck, printOnExcLabel)
 
-    controls.append(runBtn, stepBtn, startStopBtn, dumpBtn, clearBtn, pauseOnExc, printOnExc);
+    const checkboxWrapper = document.createElement('div');
+    checkboxWrapper.classList.add('emulator-checkbox-wrapper');
+    checkboxWrapper.append(pauseOnExc, printOnExc);
+
+    controls.append(runBtn, stepBtn, startStopBtn, dumpBtn, clearBtn, checkboxWrapper);
 
     let pauseOnException = false;
     let printOnException = false;
