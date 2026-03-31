@@ -156,8 +156,6 @@ code {
 }
 
 .emulator .emulator-regs {
-    grid-column: 2;
-    grid-row: 1;
     background-color: var(--bg-alt);
     padding: 0.5em;
     min-height: 17lh;
@@ -174,4 +172,32 @@ code {
     overflow-y: auto;
     padding: 0.5em;
     word-break: break-all;
+}
+
+@media (max-width: 800px) {
+    .emulator {
+        grid-template-columns: 1fr;
+        grid-template-rows: calc(17lh + 1em) 2.5em calc(17lh + 1em) 10lh;
+    }
+
+    .emulator .emulator-edit {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .emulator .emulator-controls {
+        grid-column: 1;
+        grid-row: 2;
+    }
+
+    .emulator .emulator-regs-wrapper {
+        grid-column: 1;
+        grid-row: 3;
+        width: 100%;
+    }
+
+    .emulator .emulator-output {
+        grid-column: 1;
+        grid-row: 4;
+    }
 }
