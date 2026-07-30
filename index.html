@@ -13,7 +13,7 @@
 
     <header class="page-banner">Easy RISC-V</header>
 
-    <p>(Last updated: 2026-03-31 07:21)</p>
+    <p>(Last updated: 2026-07-30 22:04)</p>
 
     <nav class="table-of-contents">
         <ul>
@@ -625,10 +625,10 @@ comparison and nothing for signed comparison)</p>
 <li><code>a &gt; b</code>: <code>slt[u] reversed</code></li>
 <li><code>a &lt;= b</code>: <code>slt[u] reversed ; xori 1</code></li>
 <li><code>a &gt;= b</code>: <code>slt[u] ; xori 1</code></li>
-<li><code>a == 0</code>: <code>sltu x0</code></li>
-<li><code>a != 0</code>: <code>sltiu 1</code></li>
-<li><code>a == b</code>: <code>sub ; sltu x0</code></li>
-<li><code>a != b</code>: <code>sub ; sltiu 1</code></li>
+<li><code>a == 0</code>: <code>sltiu 1</code></li>
+<li><code>a != 0</code>: <code>sltu x0</code></li>
+<li><code>a == b</code>: <code>sub ; sltiu 1</code></li>
+<li><code>a != b</code>: <code>sub ; sltu x0</code></li>
 </ul>
 <h2 id="shift-instructions"><a href="#shift-instructions"
 class="anchor-link" aria-hidden="true"></a>Shift instructions</h2>
