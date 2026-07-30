@@ -563,10 +563,10 @@ comparison)
 - `a > b`: `slt[u] reversed`
 - `a <= b`: `slt[u] reversed ; xori 1`
 - `a >= b`: `slt[u] ; xori 1`
-- `a == 0`: `sltu x0`
-- `a != 0`: `sltiu 1`
-- `a == b`: `sub ; sltu x0`
-- `a != b`: `sub ; sltiu 1`
+- `a == 0`: `sltiu 1`
+- `a != 0`: `sltu x0`
+- `a == b`: `sub ; sltiu 1`
+- `a != b`: `sub ; sltu x0`
 
 ## Shift instructions
 
