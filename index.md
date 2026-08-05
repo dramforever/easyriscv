@@ -2721,6 +2721,7 @@ Thanks to these folks for UI design help and content suggestions:
 - cbm-vic-20 on [Hacker News](https://news.ycombinator.com/item?id=45727405)
 - Clo91eaf <https://clo91eaf.github.io>
 - Tom Hebb <https://tchebb.me>
+- jijoti <https://github.com/jijoti>
 
 And thanks to you for coming along with me on this journey. Come on over to
 <https://github.com/dramforever/easyriscv> if you have suggestions, grievances,
