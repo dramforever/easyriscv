@@ -208,3 +208,7 @@ code {
         grid-row: 4;
     }
 }
+
+::highlight(edit-current-pc) {
+    background-color: var(--bg-changed);
+}

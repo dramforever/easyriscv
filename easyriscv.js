@@ -118,6 +118,42 @@ function convertEmulator(el) {
     let printOnException = false;
     let running = false, started = false;
 
+    const rangeCache = new Map();
+
+    function generateRangeCache() {
+        rangeCache.clear();
+
+        let start = 0;
+        const lines = edit.value.split('\n');
+
+        for (let i = 0; i < lines.length; i ++) {
+            const end = start + lines[i].length;
+            rangeCache.set(i + 1, { start, end });
+
+            // Also skip newline
+            start = end + 1;
+        }
+    }
+
+    const doHighlights = !!CSS.highlights && !!edit.createValueRange;
+
+    function updateHighlight() {
+        if (!doHighlights)
+            return;
+
+        const highlights = [];
+        if (started && !running && debugMap.has(riscv.pc)) {
+            const lineno = debugMap.get(riscv.pc);
+            if (rangeCache.has(lineno)) {
+                const { start, end } = rangeCache.get(lineno);
+                const range = edit.createValueRange(start, end);
+                highlights.push(range);
+            }
+        }
+
+        CSS.highlights.set("edit-current-pc", new Highlight(...highlights));
+    }
+
     function updateUI() {
         pauseOnException = pauseOnExcCheck.checked;
         printOnException = printOnExcCheck.checked;
@@ -135,7 +171,7 @@ function convertEmulator(el) {
     printOnExcCheck.onchange = updateUI;
     updateUI();
 
-    let mem = null, riscv = null, dump = null, runTask = null, oldState = null;
+    let mem = null, riscv = null, dump = null, debugMap = null, runTask = null, oldState = null;
 
     const fmt = (x) => `0x${x.toString(16).padStart(8, '0')}`;
 
@@ -193,6 +229,7 @@ function convertEmulator(el) {
 
         if (res.type === 'ok') {
             dump = res.dump;
+            debugMap = res.debugMap;
             const decoder = new TextDecoder();
             mem = new EmulatorMemory((byte) => {
                 const buf = new Uint8Array([byte]);
@@ -205,6 +242,8 @@ function convertEmulator(el) {
             riscv.regs[2 /* sp */] = 0x40000000 + mem.memory.byteLength;
             running = false;
             started = true;
+            generateRangeCache();
+            updateHighlight();
             renderRegs();
             updateUI();
         } else {
@@ -221,10 +260,12 @@ function convertEmulator(el) {
         mem = null;
         riscv = null;
         dump = null;
+        debugMap = null;
         oldState = null;
         running = false;
         started = false;
         writeOutput('[ Stopped ]\n')
+        updateHighlight();
         updateUI();
         edit.focus();
     }
@@ -252,6 +293,7 @@ function convertEmulator(el) {
     function step() {
         oldState = riscv.dump_state();
         const res = riscv.step();
+        updateHighlight();
         renderRegs();
         if (res.type === 'stop') {
             stop();
@@ -276,6 +318,7 @@ function convertEmulator(el) {
                     writeOutput(fmtException(res));
                 }
                 if (pauseOnException) {
+                    updateHighlight();
                     renderRegs();
                     pause();
                 }
@@ -288,6 +331,7 @@ function convertEmulator(el) {
         }
 
         if (riscv) {
+            updateHighlight();
             renderRegs();
             updateUI();
         }
@@ -300,6 +344,7 @@ function convertEmulator(el) {
     function pause() {
         running = false;
         clearTimeout(runTask);
+        updateHighlight();
         updateUI();
     }
 
