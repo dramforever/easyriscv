@@ -138,6 +138,14 @@ You may have guessed correctly that the first step corresponds to `addi`, and
 the second corresponds to `ebreak`. The top of the register panel shows `pc`,
 the current instruction address, and in parentheses the current instruction.
 
+On Chromium-based browsers, while the emulator is paused, the assembly line
+corresponding to `pc` is highlighted. (The browser features required for
+highlighting text in this way is not yet implemented in Gecko/Firefox, as of
+September 2026, but [it is planned][mozilla-opaquerange-position]. The status of
+this on other browser engines is unknown.)
+
+[mozilla-opaquerange-position]: https://github.com/mozilla/standards-positions/issues/1289
+
 'Dump' opens a new window containing some text. There are two
 sections: the first is the symbol table, which tells you about the labels in
 your code:

@@ -13,7 +13,7 @@
 
     <header class="page-banner">Easy RISC-V</header>
 
-    <p>(Last updated: 2026-08-05 10:00)</p>
+    <p>(Last updated: 2026-09-11 14:01)</p>
 
     <nav class="table-of-contents">
         <ul>
@@ -254,6 +254,13 @@ corresponds to <code>addi</code>, and the second corresponds to
 <code>ebreak</code>. The top of the register panel shows
 <code>pc</code>, the current instruction address, and in parentheses the
 current instruction.</p>
+<p>On Chromium-based browsers, while the emulator is paused, the
+assembly line corresponding to <code>pc</code> is highlighted. (The
+browser features required for highlighting text in this way is not yet
+implemented in Gecko/Firefox, as of September 2026, but <a
+href="https://github.com/mozilla/standards-positions/issues/1289">it is
+planned</a>. The status of this on other browser engines is
+unknown.)</p>
 <p>‘Dump’ opens a new window containing some text. There are two
 sections: the first is the symbol table, which tells you about the
 labels in your code:</p>
