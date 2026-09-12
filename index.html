@@ -13,7 +13,7 @@
 
     <header class="page-banner">Easy RISC-V</header>
 
-    <p>(Last updated: 2026-09-12 05:30)</p>
+    <p>(Last updated: 2026-09-12 05:38)</p>
 
     <nav class="table-of-contents">
         <ul>
@@ -985,7 +985,7 @@ combo at the start puts the address of the label <code>foo</code> in
 register <code>x10</code>.</p>
 <p>Similar to <code>j</code>, <span
 id="insn-jr"><em><code>jr</code></em></span> (“jump register”) is a
-psuedoinstruction for <code>jalr</code> with <code>rd</code> being
+pseudoinstruction for <code>jalr</code> with <code>rd</code> being
 <code>x0</code> and <code>imm</code> being <code>0</code>:</p>
 <pre><code>jr rs1</code></pre>
 <p>Hmmm… If I didn’t really need the address in <code>x10</code>, that
@@ -1690,7 +1690,7 @@ test3:
 independence. You can make arbitrary calculations based on the address
 at which code is located. The immediate-bit operand mirroring
 <code>lui</code> means that it is well suited for two-instruction pairs,
-just like <code>lui</code>. These kind of “<code>pc</code> plus
+just like <code>lui</code>. These kinds of “<code>pc</code> plus
 something” calculations are known as <span
 id="term-pc-relative-addressing"><em>pc-relative
 addressing</em></span>.</p>
@@ -2084,7 +2084,7 @@ class="anchor-link" aria-hidden="true"></a>Exception return</h2>
 return”) instruction performs the reverse of part of what happens when
 an exception occurs. To be precise, what happens is:</p>
 <ul>
-<li>The current privilege levels is set back to
+<li>The current privilege level is set back to
 <code>mstatus.MPP</code></li>
 <li><code>mstatus.MPP</code> is set to 0</li>
 <li><code>pc</code> is set to <code>mepc</code></li>

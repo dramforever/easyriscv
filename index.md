@@ -898,7 +898,7 @@ foo:
 In case you forgot by now, the `lui`/`addi` combo at the start puts the address
 of the label `foo` in register `x10`.
 
-Similar to `j`, [`jr`]{x=insn} ("jump register") is a psuedoinstruction for
+Similar to `j`, [`jr`]{x=insn} ("jump register") is a pseudoinstruction for
 `jalr` with `rd` being `x0` and `imm` being `0`:
 
 ```
@@ -1691,7 +1691,7 @@ test3:
 The `auipc` instruction allows for very flexible position independence. You can
 make arbitrary calculations based on the address at which code is located. The
 immediate-bit operand mirroring `lui` means that it is well suited for
-two-instruction pairs, just like `lui`. These kind of "`pc` plus something"
+two-instruction pairs, just like `lui`. These kinds of "`pc` plus something"
 calculations are known as [pc-relative addressing]{x=term}.
 
 The syntax for getting the assembler to generate the immediate values for
@@ -2061,7 +2061,7 @@ Machine mode" will be explained in a future section.
 The [`mret`]{x=insn} ("M-mode return") instruction performs the reverse of part
 of what happens when an exception occurs. To be precise, what happens is:
 
-- The current privilege levels is set back to `mstatus.MPP`
+- The current privilege level is set back to `mstatus.MPP`
 - `mstatus.MPP` is set to 0
 - `pc` is set to `mepc`
 
