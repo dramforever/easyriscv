@@ -1361,8 +1361,8 @@ memcmp:
 memcmp_loop:
     beq a0, a3, memcmp_done # No more bytes
 
-    lb t0, 0(a0)
-    lb t1, 0(a1)
+    lbu t0, 0(a0)
+    lbu t1, 0(a1)
     sub t0, t0, t1  # t0 = *a - *b
 
     bne t0, zero, memcmp_done # If different, done
@@ -2609,7 +2609,7 @@ unsigned long do_syscall(
 ) {
     if (a7 == 1)
         sys_putchar(a0);
-    else if (a7 == 8)
+    else if (a7 == 2)
         sys_exit();
     else
         return -1;
