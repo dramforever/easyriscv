@@ -142,7 +142,7 @@ On Chromium-based browsers, while the emulator is paused, the assembly line
 corresponding to `pc` is highlighted, and, for longer code blocks, the editor
 scrolls the line into view.
 
-(The browser features required for this is not yet in Gecko/Firefox and
+(The browser feature required for this is not yet in Gecko/Firefox and
 WebKit/Safari, as of September 2026, but it is planned to be implemented in the
 future.)
 
