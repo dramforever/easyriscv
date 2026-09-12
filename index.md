@@ -31,9 +31,9 @@ good start to your journey to learning about it.
 
 RISC-V (pronounced "risk-five"), as its name suggests, is [RISC (Reduced
 instruction set computer)][wp-risc] architecture. Having started its life at UC
-Berkerley, RISC-V has bred a lively community of students, researchers,
-engineers and hobbyists working on software and hardware. Some highlights of
-RISC-V include:
+Berkeley, RISC-V has bred a lively community of students, researchers, engineers
+and hobbyists working on software and hardware. Some highlights of RISC-V
+include:
 
 [wp-risc]: https://en.wikipedia.org/wiki/Reduced_instruction_set_computer
 
@@ -45,7 +45,7 @@ RISC-V include:
 - Open standard: RISC-V specifications are developed publicly and anyone can use
   them without copyright or patent licensing issues. Many researchers and
   companies around the world have made their own RISC-V processor cores and
-  chips based on these specificaions.
+  chips based on these specifications.
 - Community support: If you want to make your own processors, rather than paying
   a hefty license fee to Arm, or designing your own architecture, you can just
   use RISC-V. Using RISC-V instead of a custom architecture allows you to make
@@ -801,7 +801,7 @@ loop:
     ebreak
 ```
 
-You can try your hands on making your favorite loops, like fibonacci numbers or
+You can try your hands on making your favorite loops, like Fibonacci numbers or
 something. Speaking of trying your hands, just so we're ready, here's what an
 infinite loop looks like. Try pausing or stopping the loop, and single stepping
 through the instructions.
@@ -1778,7 +1778,7 @@ leave itself unprotected in various ways.)
 The privilege levels are sometimes called "[modes]{x=term}" for short. And, if
 that's not short enough, we can shorten the level names themselves, ending up
 with [M-mode]{x=term} and [U-mode]{x=term}. All of the ways to refer to these
-privilege levels are interchangable.
+privilege levels are interchangeable.
 
 When a RISC-V machine starts (This is known as "[reset]{x=term}"), it begins
 execution in Machine mode. On a typical "embedded" system where only Machine
