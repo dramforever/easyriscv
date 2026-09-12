@@ -148,6 +148,18 @@ function convertEmulator(el) {
                 const { start, end } = rangeCache.get(lineno);
                 const range = edit.createValueRange(start, end);
                 highlights.push(range);
+
+                const lineHeightRange = edit.createValueRange(start, start);
+                const lineHeight = lineHeightRange.getBoundingClientRect().height;
+
+                const rangeY = range.getBoundingClientRect().y;
+                const editY = edit.getBoundingClientRect().y;
+
+                // 3.6 is just a magic number that I think looks good
+                edit.scrollBy({
+                    top: rangeY - editY - lineHeight * 3.6,
+                    behavior: 'instant'
+                });
             }
         }
 
