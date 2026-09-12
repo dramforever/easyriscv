@@ -139,12 +139,12 @@ the second corresponds to `ebreak`. The top of the register panel shows `pc`,
 the current instruction address, and in parentheses the current instruction.
 
 On Chromium-based browsers, while the emulator is paused, the assembly line
-corresponding to `pc` is highlighted. (The browser features required for
-highlighting text in this way is not yet implemented in Gecko/Firefox, as of
-September 2026, but [it is planned][mozilla-opaquerange-position]. The status of
-this on other browser engines is unknown.)
+corresponding to `pc` is highlighted, and, for longer code blocks, the editor
+scrolls the line into view.
 
-[mozilla-opaquerange-position]: https://github.com/mozilla/standards-positions/issues/1289
+(The browser features required for this is not yet in Gecko/Firefox and
+WebKit/Safari, as of September 2026, but it is planned to be implemented in the
+future.)
 
 'Dump' opens a new window containing some text. There are two
 sections: the first is the symbol table, which tells you about the labels in
