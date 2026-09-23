@@ -13,7 +13,7 @@
 
     <header class="page-banner">Easy RISC-V</header>
 
-    <p>(Last updated: 2026-09-12 11:27)</p>
+    <p>(Last updated: 2026-09-23 00:05)</p>
 
     <nav class="table-of-contents">
         <ul>
@@ -1005,9 +1005,9 @@ foo:
 </div>
 <p>What’s the advantage of this over <code>jal x0</code>? Since
 <code>%hi</code> and <code>%lo</code> can represent any 32-bit value,
-this two-instruction combo can jump to any address, free from range
-restrictions. You do need a free scratch register for the high part of
-the address though, but since RISC-V gives you 31 of them, this
+this two-instruction combo can jump to any valid address, free from
+range restrictions. You do need a free scratch register for the high
+part of the address though, but since RISC-V gives you 31 of them, this
 shouldn’t be too much of a problem.</p>
 <h2 id="jump-and-link"><a href="#jump-and-link" class="anchor-link"
 aria-hidden="true"></a>Jump and link</h2>
@@ -1658,9 +1658,9 @@ instruction. So this code:</p>
 <p>Why would you need this? On modern systems, it’s often desirable to
 have machine code that can be moved around in address space. For
 example, a shared library i.e. dynamically linked library can be loaded
-into any program, at any address. It would be helpful if the machine
-code does not need to be patched every time. This is called <span
-id="term-position-independent-code"><em>position independent
+into any program, at any suitable address. It would be helpful if the
+machine code does not need to be patched every time. This is called
+<span id="term-position-independent-code"><em>position independent
 code</em></span> (<span id="term-pic"><em>PIC</em></span>).</p>
 <p>Some instructions already exhibit position independence. For example,
 as mentioned earlier when we talked about using <code>lui</code> and
@@ -2106,7 +2106,7 @@ writable. This gives us more flexibility in the use of
 (really <code>jalr</code> instruction) can be used to return from a
 call, and also can be used to jump to any address. Similarly,
 <code>mret</code> not only lets us return from an exception, but also
-lets us jump to any address <em>and</em> switch to any privilege
+lets us jump to any valid address <em>and</em> switch to any privilege
 level.</p>
 <h1 id="handling-user-mode"><a href="#handling-user-mode"
 class="anchor-link" aria-hidden="true"></a>Handling User mode</h1>
@@ -2690,6 +2690,9 @@ Here are some of the most egregious lies and omissions, compared to the
 “real” RISC-V architecture and “real” RISC-V assembly code found in the
 world:</p>
 <ul>
+<li>The <span id="insn-fence"><em><code>fence</code></em></span>
+instruction is a part of <code>RV32I_Zicsr</code> but was left out
+entirely from this tutorial.</li>
 <li>The assembly syntax resembles the syntax used by LLVM assembler and
 GNU Binutils for RISC-V. However, it is not identical.</li>
 <li>There are a lot more pseudoinstructions and CSRs than what I have
@@ -2803,6 +2806,7 @@ aria-hidden="true"></a>Instructions</h2>
 <li><a href="#insn-csrw"><code>csrw</code></a></li>
 <li><a href="#insn-ebreak"><code>ebreak</code></a></li>
 <li><a href="#insn-ecall"><code>ecall</code></a></li>
+<li><a href="#insn-fence"><code>fence</code></a></li>
 <li><a href="#insn-j"><code>j</code></a></li>
 <li><a href="#insn-jal"><code>jal</code></a></li>
 <li><a href="#insn-jalr"><code>jalr</code></a></li>

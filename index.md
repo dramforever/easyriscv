@@ -924,10 +924,10 @@ foo:
 ```
 
 What's the advantage of this over `jal x0`? Since `%hi` and `%lo` can represent
-any 32-bit value, this two-instruction combo can jump to any address, free from
-range restrictions. You do need a free scratch register for the high part of the
-address though, but since RISC-V gives you 31 of them, this shouldn't be too
-much of a problem.
+any 32-bit value, this two-instruction combo can jump to any valid address,
+free from range restrictions. You do need a free scratch register for the high
+part of the address though, but since RISC-V gives you 31 of them, this
+shouldn't be too much of a problem.
 
 ## Jump and link
 
@@ -1657,11 +1657,12 @@ start:
 
 Gives you `start + 0x3004`.
 
-Why would you need this? On modern systems, it's often desirable to have machine
-code that can be moved around in address space. For example, a shared library
-i.e. dynamically linked library can be loaded into any program, at any address.
-It would be helpful if the machine code does not need to be patched every time.
-This is called [position independent code]{x=term} ([PIC]{x=term}).
+Why would you need this? On modern systems, it's often desirable to have
+machine code that can be moved around in address space. For example, a shared
+library i.e. dynamically linked library can be loaded into any program, at any
+suitable address. It would be helpful if the machine code does not need to be
+patched every time. This is called [position independent code]{x=term}
+([PIC]{x=term}).
 
 Some instructions already exhibit position independence. For example, as
 mentioned earlier when we talked about using `lui` and `jalr` as a pair, the
@@ -2085,7 +2086,7 @@ However, `mstatus` and `mepc` are also writable. This gives us more flexibility
 in the use of `mret`. As an analogy, the same `jr` instruction (really `jalr`
 instruction) can be used to return from a call, and also can be used to jump to
 any address. Similarly, `mret` not only lets us return from an exception, but
-also lets us jump to any address *and* switch to any privilege level.
+also lets us jump to any valid address *and* switch to any privilege level.
 
 # Handling User mode
 
@@ -2684,6 +2685,8 @@ As long as this tutorial is, some simplifications have been made. Here are some
 of the most egregious lies and omissions, compared to the "real" RISC-V
 architecture and "real" RISC-V assembly code found in the world:
 
+- The [`fence`]{x=insn} instruction is a part of `RV32I_Zicsr` but was left
+  out entirely from this tutorial.
 - The assembly syntax resembles the syntax used by LLVM assembler and GNU
   Binutils for RISC-V. However, it is not identical.
 - There are a lot more pseudoinstructions and CSRs than what I have described.
